@@ -21,9 +21,9 @@ namespace NonGamingDirectUploader.Helpers
         private static string TableName(UploaderType type) => type switch
         {
             UploaderType.Others => "Curr_Others",
-            UploaderType.FnB => "Curr_FnB",
+            UploaderType.FnB => "Curr_FB",
             UploaderType.Hotel => "Curr_Hotel",
-            UploaderType.Visitation => "Curr_Visitation",
+            UploaderType.Visitation => "Curr_Other_Stat",
             _ => throw new ArgumentOutOfRangeException(nameof(type))
         };
 

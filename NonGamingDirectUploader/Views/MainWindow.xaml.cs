@@ -9,6 +9,10 @@ namespace NonGamingDirectUploader.Views
     public partial class MainWindow : Window
     {
         private readonly MainViewModel _vm = new();
+        private readonly UploaderPage _othersPage = new();
+        private readonly UploaderPage _fnBPage = new();
+        private readonly UploaderPage _hotelPage = new();
+        private readonly UploaderPage _visitationPage = new();
         private string _activeTag = "Others";
 
         public MainWindow()
@@ -17,10 +21,10 @@ namespace NonGamingDirectUploader.Views
             DataContext = _vm;
 
             // Bind each page to its view model
-            OthersPage.SetViewModel(_vm.OthersVM);
-            FnBPage.SetViewModel(_vm.FnBVM);
-            HotelPage.SetViewModel(_vm.HotelVM);
-            VisitationPage.SetViewModel(_vm.VisitationVM);
+            _othersPage.SetViewModel(_vm.OthersVM);
+            _fnBPage.SetViewModel(_vm.FnBVM);
+            _hotelPage.SetViewModel(_vm.HotelVM);
+            _visitationPage.SetViewModel(_vm.VisitationVM);
 
             PageLabel.Text = "Others Uploader";
         }
@@ -37,10 +41,10 @@ namespace NonGamingDirectUploader.Views
             _activeTag = tag;
 
             // Hide all pages
-            OthersPage.Visibility = Visibility.Collapsed;
-            FnBPage.Visibility = Visibility.Collapsed;
-            HotelPage.Visibility = Visibility.Collapsed;
-            VisitationPage.Visibility = Visibility.Collapsed;
+            //OthersPage.Visibility = Visibility.Collapsed;
+            //FnBPage.Visibility = Visibility.Collapsed;
+            //HotelPage.Visibility = Visibility.Collapsed;
+            //VisitationPage.Visibility = Visibility.Collapsed;
 
             // Reset all nav styles
             NavOthers.Style = (Style)FindResource("NavButton");
@@ -58,28 +62,32 @@ namespace NonGamingDirectUploader.Views
             switch (tag)
             {
                 case "Others":
-                    OthersPage.Visibility = Visibility.Visible;
+                    //OthersPage.Visibility = Visibility.Visible;
+                    PageHost.Content = _othersPage;
                     NavOthers.Style = (Style)FindResource("NavButtonActive");
                     DotOthers.Visibility = Visibility.Visible;
                     PageLabel.Text = "Others Uploader";
                     _vm.ActiveUploader = UploaderType.Others;
                     break;
                 case "FnB":
-                    FnBPage.Visibility = Visibility.Visible;
+                    //FnBPage.Visibility = Visibility.Visible;
+                    PageHost.Content = _fnBPage;
                     NavFnB.Style = (Style)FindResource("NavButtonActive");
                     DotFnB.Visibility = Visibility.Visible;
                     PageLabel.Text = "F&B Uploader";
                     _vm.ActiveUploader = UploaderType.FnB;
                     break;
                 case "Hotel":
-                    HotelPage.Visibility = Visibility.Visible;
+                    //HotelPage.Visibility = Visibility.Visible;
+                    PageHost.Content = _hotelPage;
                     NavHotel.Style = (Style)FindResource("NavButtonActive");
                     DotHotel.Visibility = Visibility.Visible;
                     PageLabel.Text = "Hotel Uploader";
                     _vm.ActiveUploader = UploaderType.Hotel;
                     break;
                 case "Visitation":
-                    VisitationPage.Visibility = Visibility.Visible;
+                    //VisitationPage.Visibility = Visibility.Visible;
+                    PageHost.Content = _visitationPage;
                     NavVisitation.Style = (Style)FindResource("NavButtonActive");
                     DotVisitation.Visibility = Visibility.Visible;
                     PageLabel.Text = "Visitation Uploader";

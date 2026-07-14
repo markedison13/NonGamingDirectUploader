@@ -1,8 +1,7 @@
 ﻿<Window x:Class="NonGamingDirectUploader.Views.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="clr-namespace:NonGamingDirectUploader.ViewModels"
-        xmlns:views="clr-namespace:NonGamingDirectUploader.Views"
+
         Title="OOD Uploader — FI-FP&amp;A Dashboard"
         Height="780" Width="1280"
         MinHeight="680" MinWidth="1100"
@@ -103,22 +102,26 @@
                 </Border>
 
                 <!-- Page host — swap content per active tab -->
-                <Grid Grid.Row="1">
-                     <!--Others Page--> 
+                <!--<Grid Grid.Row="1">
+                     --><!--Others Page--><!-- 
                     <views:UploaderPage x:Name="OthersPage"
                                         Visibility="Visible"/>
-                     <!--F&B Page--> 
+                     --><!--F&B Page--><!-- 
                     <views:UploaderPage x:Name="FnBPage"
                                         Visibility="Collapsed"/>
-                     <!--Hotel Page--> 
+                     --><!--Hotel Page--><!-- 
                     <views:UploaderPage x:Name="HotelPage"
                                         Visibility="Collapsed"/>
-                     <!--Visitation Page--> 
+                     --><!--Visitation Page--><!-- 
                     <views:UploaderPage x:Name="VisitationPage"
                                         Visibility="Collapsed"/>
-                </Grid>
+                </Grid>-->
             </Grid>
-
+            
+            <!-- Page host — pages are created in code-behind so the main XAML
+                     does not need to resolve the UploaderPage type at design time. -->
+            <ContentControl x:Name="PageHost" Grid.Row="1"/>
+            
             <!-- ══════════════════════════════════════════════════════════════ -->
             <!--  RIGHT DOCK SIDEBAR                                            -->
             <!-- ══════════════════════════════════════════════════════════════ -->
