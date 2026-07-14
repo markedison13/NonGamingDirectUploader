@@ -1,0 +1,326 @@
+﻿<UserControl x:Class="NonGamingDirectUploader.Views.UploaderPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid Background="{StaticResource BgSurfaceBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <!-- Page header -->
+            <RowDefinition Height="*"/>
+            <!-- Body -->
+        </Grid.RowDefinitions>
+
+        <!-- ── PAGE HEADER ─────────────────────────────────────────────────── -->
+        <Border Grid.Row="0" Padding="28,20,28,16"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="0,0,0,1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                        <Border x:Name="AccentBar" Width="4" Height="22" CornerRadius="2"
+                                Background="{StaticResource AccentBlueBrush}" Margin="0,0,10,0"/>
+                        <TextBlock x:Name="TitleBlock"
+                                   Text="Others Uploader"
+                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                   FontSize="20" FontWeight="Bold"/>
+                    </StackPanel>
+                    <TextBlock x:Name="SubtitleBlock"
+                               Text="Upload daily or monthly data to NonGaming.accdb"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               FontSize="12" Margin="14,0,0,0"/>
+                </StackPanel>
+
+                <!-- Status badge -->
+                <Border Grid.Column="1" CornerRadius="20" Padding="12,6"
+                        Background="{StaticResource BgCardBrush}"
+                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                    <StackPanel Orientation="Horizontal">
+                        <Ellipse x:Name="StatusDot" Width="8" Height="8"
+                                 Fill="{StaticResource TextMutedBrush}"
+                                 VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <TextBlock x:Name="StatusBadgeText"
+                                   Text="Not Connected"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   FontSize="11" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- ── BODY ────────────────────────────────────────────────────────── -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="340"/>
+                <!-- Left config panel -->
+                <ColumnDefinition Width="*"/>
+                <!-- Right data panel -->
+            </Grid.ColumnDefinitions>
+
+            <!-- ── LEFT CONFIGURATION PANEL ─────────────────────────────── -->
+            <Border Grid.Column="0"
+                    Background="{StaticResource BgSurfaceBrush}"
+                    BorderBrush="{StaticResource BorderBrush}"
+                    BorderThickness="0,0,1,0">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="24,20,24,20" >
+
+                        <!-- DATABASE SECTION -->
+                        <TextBlock Text="DATABASE" Foreground="{StaticResource TextMutedBrush}"
+                                   FontSize="10" FontWeight="Bold" Margin="0,0,0,10"/>
+
+                        <TextBlock Text="Database Path" Foreground="{StaticResource TextSecondaryBrush}"
+                                   FontSize="12" Margin="0,0,0,6"/>
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="DbPathBox" IsReadOnly="True"
+                                     Text="No database selected…"
+                                     Foreground="{StaticResource TextMutedBrush}"
+                                     FontSize="11"/>
+                            <Button Grid.Column="1" Content="Browse" Margin="6,0,0,0"
+                                    Style="{StaticResource GhostButton}"
+                                    Click="BrowseDb_Click"/>
+                        </Grid>
+
+                        <Button Content="⟳  Test Connection" Style="{StaticResource GhostButton}"
+                                HorizontalAlignment="Stretch"
+                                Click="TestConn_Click" Margin="0,0,0,20"/>
+
+                        <Separator Margin="0,0,0,20"/>
+
+                        <!-- UPLOAD MODE -->
+                        <TextBlock Text="UPLOAD MODE" Foreground="{StaticResource TextMutedBrush}"
+                                   FontSize="10" FontWeight="Bold" Margin="0,0,0,12"/>
+
+                        <Grid Margin="0,0,0,20">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border x:Name="DailyTab" Grid.Column="0"
+                                    Background="{StaticResource AccentBlueBrush}"
+                                    CornerRadius="6,0,0,6" Padding="0,8">
+                                <TextBlock Text="Daily" Foreground="White" FontSize="13"
+                                           FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                                <Border.InputBindings>
+                                    <MouseBinding MouseAction="LeftClick" Command="{x:Null}"/>
+                                </Border.InputBindings>
+                            </Border>
+                            <Border x:Name="MonthlyTab" Grid.Column="1"
+                                    Background="{StaticResource BgElevatedBrush}"
+                                    CornerRadius="0,6,6,0" Padding="0,8"
+                                    Cursor="Hand" MouseDown="MonthlyTab_Click">
+                                <TextBlock Text="Monthly" Foreground="{StaticResource TextSecondaryBrush}"
+                                           FontSize="13" HorizontalAlignment="Center"/>
+                            </Border>
+                            <!-- click handlers on code-behind -->
+                            <Border Grid.Column="0" Background="Transparent" Cursor="Hand"
+                                    MouseDown="DailyTab_Click"/>
+                        </Grid>
+
+                        <!-- DAILY DATE -->
+                        <StackPanel x:Name="DailySection" Visibility="Visible">
+                            <TextBlock Text="Date to Extract / Upload" Foreground="{StaticResource TextSecondaryBrush}"
+                                       FontSize="12" Margin="0,0,0,6"/>
+                            <DatePicker x:Name="DailyDatePicker" Margin="0,0,0,20"
+                                        SelectedDateChanged="DailyDate_Changed"/>
+                        </StackPanel>
+
+                        <!-- MONTHLY RANGE -->
+                        <StackPanel x:Name="MonthlySection" Visibility="Collapsed">
+                            <TextBlock Text="Month" Foreground="{StaticResource TextSecondaryBrush}"
+                                       FontSize="12" Margin="0,0,0,6"/>
+                            <ComboBox x:Name="MonthCombo" Margin="0,0,0,12"
+                                      SelectionChanged="MonthCombo_Changed">
+                                <ComboBoxItem Content="January"  Tag="1"/>
+                                <ComboBoxItem Content="February" Tag="2"/>
+                                <ComboBoxItem Content="March"    Tag="3"/>
+                                <ComboBoxItem Content="April"    Tag="4"/>
+                                <ComboBoxItem Content="May"      Tag="5"/>
+                                <ComboBoxItem Content="June"     Tag="6"/>
+                                <ComboBoxItem Content="July"     Tag="7"/>
+                                <ComboBoxItem Content="August"   Tag="8"/>
+                                <ComboBoxItem Content="September" Tag="9"/>
+                                <ComboBoxItem Content="October"  Tag="10"/>
+                                <ComboBoxItem Content="November" Tag="11"/>
+                                <ComboBoxItem Content="December" Tag="12"/>
+                            </ComboBox>
+                            <Grid Margin="0,0,0,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Margin="0,0,4,0">
+                                    <TextBlock Text="Start Date" Foreground="{StaticResource TextSecondaryBrush}"
+                                               FontSize="11" Margin="0,0,0,4"/>
+                                    <DatePicker x:Name="StartDatePicker"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Margin="4,0,0,0">
+                                    <TextBlock Text="End Date" Foreground="{StaticResource TextSecondaryBrush}"
+                                               FontSize="11" Margin="0,0,0,4"/>
+                                    <DatePicker x:Name="EndDatePicker"/>
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+
+                        <Separator Margin="0,4,0,20"/>
+
+                        <!-- ACTIONS -->
+                        <TextBlock Text="ACTIONS" Foreground="{StaticResource TextMutedBrush}"
+                                   FontSize="10" FontWeight="Bold" Margin="0,0,0,12"/>
+
+                        <Button Content="⬇  Get Data from Database" Style="{StaticResource PrimaryButton}"
+                                HorizontalAlignment="Stretch" Margin="0,0,0,8"
+                                Click="GetData_Click"/>
+
+                        <Button x:Name="UploadBtn" Content="⬆  Upload to Database"
+                                Style="{StaticResource SuccessButton}"
+                                HorizontalAlignment="Stretch" Margin="0,0,0,8"
+                                Click="Upload_Click"/>
+
+                        <Button Content="✕  Clear Log" Style="{StaticResource GhostButton}"
+                                HorizontalAlignment="Stretch" Margin="0,0,0,0"
+                                Click="ClearLog_Click"/>
+
+                        <Separator Margin="0,20,0,20"/>
+
+                        <!-- STATUS -->
+                        <TextBlock Text="STATUS" Foreground="{StaticResource TextMutedBrush}"
+                                   FontSize="10" FontWeight="Bold" Margin="0,0,0,10"/>
+
+                        <!-- Progress bar -->
+                        <Border Background="{StaticResource BgElevatedBrush}"
+                                CornerRadius="4" Height="6" Margin="0,0,0,8"
+                                ClipToBounds="True">
+                            <Border x:Name="ProgressFill"
+                                    Background="{StaticResource AccentGreenBrush}"
+                                    CornerRadius="4" Width="0"
+                                    HorizontalAlignment="Left"/>
+                        </Border>
+
+                        <TextBlock x:Name="StatusText"
+                                   Text="Ready."
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   FontSize="12" TextWrapping="Wrap" Margin="0,0,0,8"/>
+
+                        <TextBlock x:Name="RowCountText"
+                                   Text="0 records"
+                                   Foreground="{StaticResource TextMutedBrush}"
+                                   FontSize="11"/>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <!-- ── RIGHT DATA PANEL ───────────────────────────────────────── -->
+            <Grid Grid.Column="1" Background="{StaticResource BgSurfaceBrush}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <!-- Data grid -->
+                    <RowDefinition Height="160"/>
+                    <!-- Log -->
+                </Grid.RowDefinitions>
+
+                <!-- Data preview grid -->
+                <Border Grid.Row="0" Margin="20,16,20,0"
+                        Background="{StaticResource BgCardBrush}"
+                        CornerRadius="8" ClipToBounds="True"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="1">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <Border Grid.Row="0" Padding="16,10"
+                                BorderBrush="{StaticResource BorderBrush}"
+                                BorderThickness="0,0,0,1"
+                                Background="{StaticResource BgElevatedBrush}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Data Preview" Foreground="{StaticResource TextPrimaryBrush}"
+                                           FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="RecordCountBadge"
+                                           Text="0 records"
+                                           Foreground="{StaticResource TextMutedBrush}"
+                                           FontSize="11" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Empty state -->
+                        <StackPanel x:Name="EmptyState" Grid.Row="1"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <TextBlock Text="⊡" FontSize="48" Foreground="{StaticResource TextMutedBrush}"
+                                       HorizontalAlignment="Center"/>
+                            <TextBlock Text="No data loaded" Foreground="{StaticResource TextMutedBrush}"
+                                       FontSize="14" HorizontalAlignment="Center" Margin="0,8,0,4"/>
+                            <TextBlock Text="Click 'Get Data' to fetch from the database"
+                                       Foreground="{StaticResource TextMutedBrush}"
+                                       FontSize="11" HorizontalAlignment="Center"/>
+                        </StackPanel>
+
+                        <DataGrid x:Name="PreviewGrid" Grid.Row="1"
+                                  Visibility="Collapsed"
+                                  AutoGenerateColumns="True"
+                                  Margin="0,0,0,0"/>
+                    </Grid>
+                </Border>
+
+                <!-- Activity log -->
+                <Border Grid.Row="1" Margin="20,10,20,16"
+                        Background="{StaticResource BgCardBrush}"
+                        CornerRadius="8" ClipToBounds="True"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="1">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <Border Grid.Row="0" Padding="16,8"
+                                Background="{StaticResource BgElevatedBrush}"
+                                BorderBrush="{StaticResource BorderBrush}"
+                                BorderThickness="0,0,0,1">
+                            <TextBlock Text="Activity Log" Foreground="{StaticResource TextSecondaryBrush}"
+                                       FontSize="12" FontWeight="SemiBold"/>
+                        </Border>
+
+                        <ListBox x:Name="LogList" Grid.Row="1"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 Foreground="{StaticResource TextSecondaryBrush}"
+                                 FontSize="11"
+                                 FontFamily="Consolas"
+                                 Padding="12,6"/>
+                    </Grid>
+                </Border>
+
+                <!-- Busy overlay -->
+                <Grid Grid.RowSpan="2" x:Name="BusyOverlay"
+                      Background="#88000000"
+                      Visibility="Collapsed">
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Border Width="48" Height="48" CornerRadius="24"
+                                Background="{StaticResource BgCardBrush}"
+                                BorderBrush="{StaticResource AccentBlueBrush}"
+                                BorderThickness="2">
+                            <TextBlock Text="⟳" FontSize="24" Foreground="{StaticResource AccentBlueBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock x:Name="BusyText" Text="Processing…"
+                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                   FontSize="13" HorizontalAlignment="Center" Margin="0,12,0,0"/>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </Grid>
+    </Grid>
+</UserControl>
