@@ -23,112 +23,19 @@
     <Border CornerRadius="12" ClipToBounds="True">
         <Grid>
             <Grid.ColumnDefinitions>
+                <!-- Left dock sidebar -->
+                <ColumnDefinition Width="220"/>
                 <!-- Content area -->
                 <ColumnDefinition Width="*"/>
-                <!-- Right dock sidebar -->
-                <ColumnDefinition Width="220"/>
             </Grid.ColumnDefinitions>
 
             <!-- ══════════════════════════════════════════════════════════════ -->
-            <!--  CONTENT AREA                                                  -->
+            <!--  LEFT DOCK SIDEBAR                                             -->
             <!-- ══════════════════════════════════════════════════════════════ -->
-            <Grid Grid.Column="0" Background="{StaticResource BgSurfaceBrush}">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="48"/>
-                    <!-- Title bar -->
-                    <RowDefinition Height="*"/>
-                    <!-- Page content -->
-                </Grid.RowDefinitions>
-
-                <!-- Custom title bar -->
-                <Border Grid.Row="0" Background="{StaticResource BgDeepBrush}"
-                        MouseDown="TitleBar_MouseDown">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-
-                        <!-- Logo + title -->
-                        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0">
-                            <Border Width="24" Height="24" CornerRadius="6"
-                                    Background="{StaticResource AccentBlueBrush}" Margin="0,0,10,0">
-                                <TextBlock Text="⇑" Foreground="White" FontSize="14"
-                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
-                            <TextBlock Text="OOD Uploader" Foreground="{StaticResource TextPrimaryBrush}"
-                                       FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                            <TextBlock Text=" · FI-FP&amp;A" Foreground="{StaticResource TextSecondaryBrush}"
-                                       FontSize="13" VerticalAlignment="Center"/>
-                        </StackPanel>
-
-                        <!-- Active page label -->
-                        <TextBlock Grid.Column="1" x:Name="PageLabel"
-                                   Foreground="{StaticResource TextMutedBrush}"
-                                   FontSize="12" VerticalAlignment="Center"
-                                   HorizontalAlignment="Center"/>
-
-                        <!-- Window controls -->
-                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
-                            <Button x:Name="MinBtn" Content="─" Width="32" Height="28"
-                                    Background="Transparent" Foreground="{StaticResource TextSecondaryBrush}"
-                                    BorderThickness="0" FontSize="12" Cursor="Hand"
-                                    Click="MinBtn_Click"/>
-                            <Button x:Name="MaxBtn" Content="□" Width="32" Height="28"
-                                    Background="Transparent" Foreground="{StaticResource TextSecondaryBrush}"
-                                    BorderThickness="0" FontSize="12" Cursor="Hand"
-                                    Click="MaxBtn_Click"/>
-                            <Button x:Name="CloseBtn" Content="✕" Width="32" Height="28"
-                                    Background="Transparent" Foreground="{StaticResource TextSecondaryBrush}"
-                                    BorderThickness="0" FontSize="12" Cursor="Hand"
-                                    Click="CloseBtn_Click">
-                                <Button.Style>
-                                    <Style TargetType="Button">
-                                        <Setter Property="Background" Value="Transparent"/>
-                                        <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
-                                        <Setter Property="BorderThickness" Value="0"/>
-                                        <Style.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter Property="Background" Value="#FFFF4444"/>
-                                                <Setter Property="Foreground" Value="White"/>
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
-                            </Button>
-                        </StackPanel>
-                    </Grid>
-                </Border>
-
-                <!-- Page host — swap content per active tab -->
-                <!--<Grid Grid.Row="1">
-                     --><!--Others Page--><!-- 
-                    <views:UploaderPage x:Name="OthersPage"
-                                        Visibility="Visible"/>
-                     --><!--F&B Page--><!-- 
-                    <views:UploaderPage x:Name="FnBPage"
-                                        Visibility="Collapsed"/>
-                     --><!--Hotel Page--><!-- 
-                    <views:UploaderPage x:Name="HotelPage"
-                                        Visibility="Collapsed"/>
-                     --><!--Visitation Page--><!-- 
-                    <views:UploaderPage x:Name="VisitationPage"
-                                        Visibility="Collapsed"/>
-                </Grid>-->
-            </Grid>
-            
-            <!-- Page host — pages are created in code-behind so the main XAML
-                     does not need to resolve the UploaderPage type at design time. -->
-            <ContentControl x:Name="PageHost" Grid.Row="1"/>
-            
-            <!-- ══════════════════════════════════════════════════════════════ -->
-            <!--  RIGHT DOCK SIDEBAR                                            -->
-            <!-- ══════════════════════════════════════════════════════════════ -->
-            <Border Grid.Column="1"
+            <Border Grid.Column="0"
                     Background="{StaticResource SidebarBrush}"
                     BorderBrush="{StaticResource BorderBrush}"
-                    BorderThickness="1,0,0,0">
+                    BorderThickness="0,0,1,0">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -293,6 +200,83 @@
                     </Border>
                 </Grid>
             </Border>
+
+            <!-- ══════════════════════════════════════════════════════════════ -->
+            <!--  CONTENT AREA                                                  -->
+            <!-- ══════════════════════════════════════════════════════════════ -->
+            <Grid Grid.Column="1" Background="{StaticResource BgSurfaceBrush}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="48"/>
+                    <!-- Title bar -->
+                    <RowDefinition Height="*"/>
+                    <!-- Page content -->
+                </Grid.RowDefinitions>
+
+                <!-- Custom title bar -->
+                <Border Grid.Row="0" Background="{StaticResource BgDeepBrush}"
+                        MouseDown="TitleBar_MouseDown">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Logo + title -->
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0">
+                            <Border Width="24" Height="24" CornerRadius="6"
+                                    Background="{StaticResource AccentBlueBrush}" Margin="0,0,10,0">
+                                <TextBlock Text="⇑" Foreground="White" FontSize="14"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <TextBlock Text="OOD Uploader" Foreground="{StaticResource TextPrimaryBrush}"
+                                       FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <TextBlock Text=" · FI-FP&amp;A" Foreground="{StaticResource TextSecondaryBrush}"
+                                       FontSize="13" VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <!-- Active page label -->
+                        <TextBlock Grid.Column="1" x:Name="PageLabel"
+                                   Foreground="{StaticResource TextMutedBrush}"
+                                   FontSize="12" VerticalAlignment="Center"
+                                   HorizontalAlignment="Center"/>
+
+                        <!-- Window controls -->
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
+                            <Button x:Name="MinBtn" Content="─" Width="32" Height="28"
+                                    Background="Transparent" Foreground="{StaticResource TextSecondaryBrush}"
+                                    BorderThickness="0" FontSize="12" Cursor="Hand"
+                                    Click="MinBtn_Click"/>
+                            <Button x:Name="MaxBtn" Content="□" Width="32" Height="28"
+                                    Background="Transparent" Foreground="{StaticResource TextSecondaryBrush}"
+                                    BorderThickness="0" FontSize="12" Cursor="Hand"
+                                    Click="MaxBtn_Click"/>
+                            <Button x:Name="CloseBtn" Content="✕" Width="32" Height="28"
+                                    Background="Transparent" Foreground="{StaticResource TextSecondaryBrush}"
+                                    BorderThickness="0" FontSize="12" Cursor="Hand"
+                                    Click="CloseBtn_Click">
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+                                        <Setter Property="BorderThickness" Value="0"/>
+                                        <Style.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter Property="Background" Value="#FFFF4444"/>
+                                                <Setter Property="Foreground" Value="White"/>
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Page host — pages are created in code-behind so the main XAML
+                     does not need to resolve the UploaderPage type at design time. -->
+                <ContentControl x:Name="PageHost" Grid.Row="1"/>
+            </Grid>
 
         </Grid>
     </Border>

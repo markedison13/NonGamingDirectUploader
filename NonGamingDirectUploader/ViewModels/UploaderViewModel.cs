@@ -1,13 +1,9 @@
-﻿using Microsoft.Win32;
-using NonGamingDirectUploader.Helpers;
+﻿using NonGamingDirectUploader.Helpers;
 using NonGamingDirectUploader.Models;
 using NonGamingDirectUploader.ViewModels;
-using NonGamingDirectUploader.Helpers;
-using NonGamingDirectUploader.Models;
 using System;
 using System.Collections.ObjectModel;
 using System.Data;
-using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -15,7 +11,8 @@ namespace NonGamingDirectUploader.ViewModels
 {
     /// <summary>
     /// Shared base for all four uploader panels.
-    /// Mirrors the VBA pattern: browse DB → set date → get/upload.
+    /// Mirrors the VBA pattern: pick property → get/upload against the module's
+    /// pre-assigned database → edit/delete individual records in-place.
     /// </summary>
     public abstract class UploaderViewModel : BaseViewModel
     {
@@ -24,21 +21,38 @@ namespace NonGamingDirectUploader.ViewModels
         public abstract string DisplayTitle { get; }
         public abstract string AccentHex { get; }
 
-        // ── Database Path ─────────────────────────────────────────────────────
-        private string _dbPath = "";
-        public string DbPath
-        {
-            get => _dbPath;
-            set { Set(ref _dbPath, value); OnPropertyChanged(nameof(DbPathDisplay)); }
-        }
-        public string DbPathDisplay => string.IsNullOrEmpty(_dbPath) ? "No database selected…" : _dbPath;
+        // ── Database (resolved from backend config, not user-selected) ─────────
+        /// <summary>
+        /// The database designated for this module + property combination.
+        /// Every (module, property) pair has a fixed, pre-assigned database —
+        /// there is no manual browse/select step.
+        /// </summary>
+        public string ResolvedDbPath => DatabaseConfig.GetPathOrEmpty(UploaderType, Property);
+
+        public string DbPathDisplay => string.IsNullOrEmpty(ResolvedDbPath)
+            ? "No database configured for this module/property."
+            : ResolvedDbPath;
+
+        public bool HasDb => !string.IsNullOrEmpty(ResolvedDbPath);
 
         // ── Property ──────────────────────────────────────────────────────────
         private PropertyType _property = PropertyType.SEC;
         public PropertyType Property
         {
             get => _property;
-            set => Set(ref _property, value);
+            set
+            {
+                if (Set(ref _property, value))
+                {
+                    OnPropertyChanged(nameof(ResolvedDbPath));
+                    OnPropertyChanged(nameof(DbPathDisplay));
+                    OnPropertyChanged(nameof(HasDb));
+                    IsConnected = false;
+                    PreviewData = null;
+                    TotalRows = 0;
+                    _ = TestConnectionAsync();
+                }
+            }
         }
 
         // ── Mode ──────────────────────────────────────────────────────────────
@@ -143,34 +157,23 @@ namespace NonGamingDirectUploader.ViewModels
         }
 
         // ── Commands (called from code-behind) ────────────────────────────────
-        public void BrowseDatabase()
-        {
-            var dlg = new OpenFileDialog
-            {
-                Title = "Select Access Database (.accdb / .mdb)",
-                Filter = "Access Database|*.accdb;*.mdb|All Files|*.*",
-                InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
-            };
-            if (dlg.ShowDialog() == true)
-            {
-                DbPath = dlg.FileName;
-                Log($"Database path set: {DbPath}");
-                _ = TestConnectionAsync();
-            }
-        }
-
         public async Task TestConnectionAsync()
         {
-            if (string.IsNullOrEmpty(DbPath)) return;
+            if (!HasDb)
+            {
+                IsConnected = false;
+                SetStatus("No database configured for this module/property.", "#FFFF4444");
+                return;
+            }
             SetStatus("Testing connection…", "#FFFF8C00");
             IsBusy = true;
             try
             {
-                IsConnected = await DatabaseService.TestConnectionAsync(DbPath);
+                IsConnected = await DatabaseService.TestConnectionAsync(ResolvedDbPath);
                 if (IsConnected)
                     SetStatus("✓ Connected to database.", "#FF3FB950");
                 else
-                    SetStatus("✗ Cannot connect. Check path or driver.", "#FFFF4444");
+                    SetStatus("✗ Cannot connect. Check the configured database path/driver.", "#FFFF4444");
                 Log(IsConnected ? "Connection successful." : "Connection failed.");
             }
             finally { IsBusy = false; }
@@ -188,9 +191,9 @@ namespace NonGamingDirectUploader.ViewModels
             {
                 DataTable dt;
                 if (IsDailyMode)
-                    dt = await DatabaseService.FetchDailyAsync(DbPath, UploaderType, SelectedDate);
+                    dt = await DatabaseService.FetchDailyAsync(ResolvedDbPath, UploaderType, SelectedDate);
                 else
-                    dt = await DatabaseService.FetchMonthlyAsync(DbPath, UploaderType, MonthStart, MonthEnd);
+                    dt = await DatabaseService.FetchMonthlyAsync(ResolvedDbPath, UploaderType, MonthStart, MonthEnd);
 
                 PreviewData = dt;
                 TotalRows = dt.Rows.Count;
@@ -223,7 +226,7 @@ namespace NonGamingDirectUploader.ViewModels
                 if (IsDailyMode)
                 {
                     SetStatus("Checking for existing records…", "#FFFF8C00");
-                    bool exists = await DatabaseService.DateExistsAsync(DbPath, UploaderType, SelectedDate);
+                    bool exists = await DatabaseService.DateExistsAsync(ResolvedDbPath, UploaderType, SelectedDate);
 
                     if (exists)
                     {
@@ -233,7 +236,7 @@ namespace NonGamingDirectUploader.ViewModels
                         if (result != MessageBoxResult.OK) { SetStatus("Upload cancelled.", "#FF8B949E"); return; }
 
                         SetStatus("Deleting existing records…", "#FFFF8C00");
-                        await DatabaseService.DeleteDailyAsync(DbPath, UploaderType, SelectedDate);
+                        await DatabaseService.DeleteDailyAsync(ResolvedDbPath, UploaderType, SelectedDate);
                         Log($"Deleted existing data for {SelectedDate:MM/dd/yyyy}.");
                     }
                     else
@@ -252,12 +255,12 @@ namespace NonGamingDirectUploader.ViewModels
                     if (result != MessageBoxResult.OK) { SetStatus("Upload cancelled.", "#FF8B949E"); return; }
 
                     SetStatus("Deleting monthly records…", "#FFFF8C00");
-                    await DatabaseService.DeleteMonthlyAsync(DbPath, UploaderType, MonthStart, MonthEnd);
+                    await DatabaseService.DeleteMonthlyAsync(ResolvedDbPath, UploaderType, MonthStart, MonthEnd);
                     Log($"Deleted monthly data for {MonthStart:MM/dd/yyyy} – {MonthEnd:MM/dd/yyyy}.");
                 }
 
                 SetStatus("Uploading records…", "#FFFF8C00");
-                int uploaded = await DatabaseService.UploadRowsAsync(DbPath, UploaderType, uploadData);
+                int uploaded = await DatabaseService.UploadRowsAsync(ResolvedDbPath, UploaderType, uploadData);
                 Progress = 100;
                 TotalRows = uploaded;
                 Log($"✓ Upload complete — {uploaded} row(s) inserted.");
@@ -267,6 +270,61 @@ namespace NonGamingDirectUploader.ViewModels
             catch (Exception ex)
             {
                 SetStatus($"✗ Upload failed: {ex.Message}", "#FFFF4444");
+                Log($"ERROR: {ex.Message}");
+            }
+            finally { IsBusy = false; }
+        }
+
+        /// <summary>Persists an in-place edit of a single preview row back to the database.</summary>
+        public async Task SaveRowEditAsync(DataRow row)
+        {
+            if (!CheckDb()) return;
+            if (row.RowState != DataRowState.Modified)
+            {
+                Log("No changes to save for this row.");
+                return;
+            }
+
+            IsBusy = true;
+            SetStatus("Saving row changes…", "#FFFF8C00");
+            try
+            {
+                await DatabaseService.UpdateRowAsync(ResolvedDbPath, UploaderType, row);
+                row.AcceptChanges();
+                Log("✓ Row updated.");
+                SetStatus("✓ Row updated.", "#FF3FB950");
+            }
+            catch (Exception ex)
+            {
+                SetStatus($"✗ Update failed: {ex.Message}", "#FFFF4444");
+                Log($"ERROR: {ex.Message}");
+            }
+            finally { IsBusy = false; }
+        }
+
+        /// <summary>Deletes a single preview row from the database and removes it from the grid.</summary>
+        public async Task DeleteRowAsync(DataRow row)
+        {
+            if (!CheckDb()) return;
+
+            var result = MessageBox.Show(
+                "Delete this record from the database? This cannot be undone.",
+                DisplayTitle, MessageBoxButton.OKCancel, MessageBoxImage.Warning);
+            if (result != MessageBoxResult.OK) return;
+
+            IsBusy = true;
+            SetStatus("Deleting row…", "#FFFF8C00");
+            try
+            {
+                await DatabaseService.DeleteRowAsync(ResolvedDbPath, UploaderType, row);
+                row.Table?.Rows.Remove(row);
+                TotalRows = PreviewData?.Rows.Count ?? 0;
+                Log("✓ Row deleted.");
+                SetStatus("✓ Row deleted.", "#FF3FB950");
+            }
+            catch (Exception ex)
+            {
+                SetStatus($"✗ Delete failed: {ex.Message}", "#FFFF4444");
                 Log($"ERROR: {ex.Message}");
             }
             finally { IsBusy = false; }
@@ -284,10 +342,12 @@ namespace NonGamingDirectUploader.ViewModels
 
         private bool CheckDb()
         {
-            if (string.IsNullOrEmpty(DbPath))
+            if (!HasDb)
             {
-                SetStatus("Please select a database first.", "#FFFF4444");
-                MessageBox.Show("Please select a database path first.", DisplayTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
+                SetStatus("No database configured for this module/property.", "#FFFF4444");
+                MessageBox.Show(
+                    $"No database is configured for {DisplayTitle} / {Property} property. Please contact your administrator.",
+                    DisplayTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
             }
             return true;

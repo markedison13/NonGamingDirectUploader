@@ -27,6 +27,7 @@ namespace NonGamingDirectUploader.Views
             _visitationPage.SetViewModel(_vm.VisitationVM);
 
             PageLabel.Text = "Others Uploader";
+            PageHost.Content = _othersPage;
         }
 
         // ── Navigation ────────────────────────────────────────────────────────
@@ -39,12 +40,6 @@ namespace NonGamingDirectUploader.Views
         private void SwitchTo(string tag)
         {
             _activeTag = tag;
-
-            // Hide all pages
-            //OthersPage.Visibility = Visibility.Collapsed;
-            //FnBPage.Visibility = Visibility.Collapsed;
-            //HotelPage.Visibility = Visibility.Collapsed;
-            //VisitationPage.Visibility = Visibility.Collapsed;
 
             // Reset all nav styles
             NavOthers.Style = (Style)FindResource("NavButton");
@@ -62,7 +57,6 @@ namespace NonGamingDirectUploader.Views
             switch (tag)
             {
                 case "Others":
-                    //OthersPage.Visibility = Visibility.Visible;
                     PageHost.Content = _othersPage;
                     NavOthers.Style = (Style)FindResource("NavButtonActive");
                     DotOthers.Visibility = Visibility.Visible;
@@ -70,7 +64,6 @@ namespace NonGamingDirectUploader.Views
                     _vm.ActiveUploader = UploaderType.Others;
                     break;
                 case "FnB":
-                    //FnBPage.Visibility = Visibility.Visible;
                     PageHost.Content = _fnBPage;
                     NavFnB.Style = (Style)FindResource("NavButtonActive");
                     DotFnB.Visibility = Visibility.Visible;
@@ -78,7 +71,6 @@ namespace NonGamingDirectUploader.Views
                     _vm.ActiveUploader = UploaderType.FnB;
                     break;
                 case "Hotel":
-                    //HotelPage.Visibility = Visibility.Visible;
                     PageHost.Content = _hotelPage;
                     NavHotel.Style = (Style)FindResource("NavButtonActive");
                     DotHotel.Visibility = Visibility.Visible;
@@ -86,7 +78,6 @@ namespace NonGamingDirectUploader.Views
                     _vm.ActiveUploader = UploaderType.Hotel;
                     break;
                 case "Visitation":
-                    //VisitationPage.Visibility = Visibility.Visible;
                     PageHost.Content = _visitationPage;
                     NavVisitation.Style = (Style)FindResource("NavButtonActive");
                     DotVisitation.Visibility = Visibility.Visible;

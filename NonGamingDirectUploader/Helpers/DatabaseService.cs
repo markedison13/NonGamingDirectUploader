@@ -106,6 +106,78 @@ namespace NonGamingDirectUploader.Helpers
             });
         }
 
+        // ── UPDATE SINGLE ROW (row-level edit from the preview grid) ────────
+        /// <summary>
+        /// Updates the row in the database that matches <paramref name="row"/>'s
+        /// ORIGINAL (pre-edit) values, setting every column to the row's current
+        /// (edited) values. Call before <c>row.AcceptChanges()</c>.
+        /// </summary>
+        public static async Task UpdateRowAsync(string dbPath, UploaderType type, DataRow row)
+        {
+            await Task.Run(() =>
+            {
+                using var cn = new OleDbConnection(BuildConnectionString(dbPath));
+                cn.Open();
+
+                var setClauses = new List<string>();
+                var parameters = new List<OleDbParameter>();
+                foreach (DataColumn col in row.Table.Columns)
+                {
+                    setClauses.Add($"[{col.ColumnName}] = ?");
+                    parameters.Add(new OleDbParameter(col.ColumnName, row[col] ?? DBNull.Value));
+                }
+
+                var (whereClause, whereParams) = BuildRowWhereClause(row);
+                string sql = $"UPDATE {TableName(type)} SET {string.Join(",", setClauses)} WHERE {whereClause}";
+
+                using var cmd = new OleDbCommand(sql, cn);
+                cmd.Parameters.AddRange(parameters.ToArray());
+                cmd.Parameters.AddRange(whereParams.ToArray());
+                cmd.ExecuteNonQuery();
+            });
+        }
+
+        // ── DELETE SINGLE ROW (row-level delete from the preview grid) ──────
+        public static async Task DeleteRowAsync(string dbPath, UploaderType type, DataRow row)
+        {
+            await Task.Run(() =>
+            {
+                using var cn = new OleDbConnection(BuildConnectionString(dbPath));
+                cn.Open();
+
+                var (whereClause, whereParams) = BuildRowWhereClause(row);
+                string sql = $"DELETE FROM {TableName(type)} WHERE {whereClause}";
+
+                using var cmd = new OleDbCommand(sql, cn);
+                cmd.Parameters.AddRange(whereParams.ToArray());
+                cmd.ExecuteNonQuery();
+            });
+        }
+
+        /// <summary>Builds a WHERE clause that matches a row's ORIGINAL values across every column.</summary>
+        private static (string Clause, List<OleDbParameter> Parameters) BuildRowWhereClause(DataRow row)
+        {
+            var clauses = new List<string>();
+            var parameters = new List<OleDbParameter>();
+            foreach (DataColumn col in row.Table.Columns)
+            {
+                var value = row.RowState == DataRowState.Detached
+                    ? row[col]
+                    : row[col, DataRowVersion.Original];
+
+                if (value == null || value == DBNull.Value)
+                {
+                    clauses.Add($"[{col.ColumnName}] IS NULL");
+                }
+                else
+                {
+                    clauses.Add($"[{col.ColumnName}] = ?");
+                    parameters.Add(new OleDbParameter(col.ColumnName, value));
+                }
+            }
+            return (string.Join(" AND ", clauses), parameters);
+        }
+
         // ── FETCH DAILY (preview / verification) ─────────────────────────────
         public static async Task<DataTable> FetchDailyAsync(string dbPath, UploaderType type, DateTime date)
         {
