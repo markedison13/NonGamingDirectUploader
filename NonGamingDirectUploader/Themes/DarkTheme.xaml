@@ -120,30 +120,56 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ComboBox">
-                    <Border x:Name="border"
-                            Background="{TemplateBinding Background}"
-                            BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="6">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition/>
-                                <ColumnDefinition Width="32"/>
-                            </Grid.ColumnDefinitions>
-                            <ContentPresenter x:Name="ContentSite"
-                                              Content="{TemplateBinding SelectionBoxItem}"
-                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
-                                              Margin="10,0,0,0"
-                                              VerticalAlignment="Center"/>
-                            <Path Grid.Column="1" Data="M0,0 L4,4 L8,0"
-                                  Stroke="{StaticResource TextSecondaryBrush}"
-                                  StrokeThickness="1.5"
-                                  HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            <ToggleButton Grid.ColumnSpan="2"
-                                         IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
-                                         Background="Transparent" BorderThickness="0"/>
-                        </Grid>
-                    </Border>
+                    <Grid>
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition Width="32"/>
+                                </Grid.ColumnDefinitions>
+                                <ContentPresenter x:Name="ContentSite"
+                                                  Content="{TemplateBinding SelectionBoxItem}"
+                                                  ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                                  Margin="10,0,0,0"
+                                                  VerticalAlignment="Center"/>
+                                <Path Grid.Column="1" Data="M0,0 L4,4 L8,0"
+                                      Stroke="{StaticResource TextSecondaryBrush}"
+                                      StrokeThickness="1.5"
+                                      HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <ToggleButton Grid.ColumnSpan="2"
+                                              IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                              Background="Transparent" BorderThickness="0">
+                                    <ToggleButton.Template>
+                                        <ControlTemplate TargetType="ToggleButton">
+                                            <Border Background="{TemplateBinding Background}"/>
+                                        </ControlTemplate>
+                                    </ToggleButton.Template>
+                                </ToggleButton>
+                            </Grid>
+                        </Border>
+
+                        <!-- Popup is required for the dropdown to actually open -->
+                        <Popup x:Name="PART_Popup"
+                               IsOpen="{TemplateBinding IsDropDownOpen}"
+                               Placement="Bottom"
+                               AllowsTransparency="True"
+                               Focusable="False"
+                               PopupAnimation="Slide"
+                               Width="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}">
+                            <Border Background="{StaticResource BgCardBrush}"
+                                    BorderBrush="{StaticResource AccentBlueBrush}"
+                                    BorderThickness="1" CornerRadius="6"
+                                    Margin="0,4,0,0" MaxHeight="240">
+                                <ScrollViewer>
+                                    <ItemsPresenter/>
+                                </ScrollViewer>
+                            </Border>
+                        </Popup>
+                    </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsDropDownOpen" Value="True">
                             <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource AccentBlueBrush}"/>
@@ -174,6 +200,14 @@
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="Height" Value="38"/>
         <Setter Property="FontSize" Value="13"/>
+    </Style>
+
+    <!-- DatePicker's internal text box is a separate control type, so it needs
+         its own style or the typed date text is unreadable against the dark bg. -->
+    <Style TargetType="DatePickerTextBox">
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+        <Setter Property="Background" Value="{StaticResource BgElevatedBrush}"/>
+        <Setter Property="CaretBrush" Value="{StaticResource AccentBlueBrush}"/>
     </Style>
 
     <!-- ── PRIMARY BUTTON ── -->
@@ -322,6 +356,10 @@
         <Setter Property="AutoGenerateColumns" Value="False"/>
         <Setter Property="CanUserAddRows" Value="False"/>
         <Setter Property="IsReadOnly" Value="True"/>
+        <Setter Property="HorizontalScrollBarVisibility" Value="Auto"/>
+        <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+        <Setter Property="EnableRowVirtualization" Value="True"/>
+        <Setter Property="EnableColumnVirtualization" Value="True"/>
     </Style>
 
     <Style TargetType="DataGridColumnHeader">
