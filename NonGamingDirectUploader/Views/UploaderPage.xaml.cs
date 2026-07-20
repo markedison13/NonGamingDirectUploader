@@ -1,8 +1,12 @@
-﻿using NonGamingDirectUploader.ViewModels;
+﻿using NonGamingDirectUploader.Helpers;
+using NonGamingDirectUploader.ViewModels;
 using System;
 using System.Data;
+using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 
@@ -17,7 +21,11 @@ namespace NonGamingDirectUploader.Views
         {
             InitializeComponent();
             DailyDatePicker.SelectedDate = DateTime.Today;
-            MonthCombo.SelectedIndex = DateTime.Today.Month - 1;
+
+            // Default Start/End to the current month, matching the VM's own defaults.
+            var today = DateTime.Today;
+            StartDatePicker.SelectedDate = new DateTime(today.Year, today.Month, 1);
+            EndDatePicker.SelectedDate = new DateTime(today.Year, today.Month, DateTime.DaysInMonth(today.Year, today.Month));
         }
 
         public void SetViewModel(UploaderViewModel vm)
@@ -42,6 +50,9 @@ namespace NonGamingDirectUploader.Views
 
             // Initial database display (auto-resolved from module + property)
             UpdateDbPathDisplay();
+
+            // Fixed set of preview columns for this table (DTE, etc.)
+            BuildPreviewColumns();
 
             // VM property-change → UI refresh
             vm.PropertyChanged += (s, e) =>
@@ -77,6 +88,10 @@ namespace NonGamingDirectUploader.Views
                     }
                 });
             };
+
+            // Push the initial Start/End picker values into the VM once it's attached.
+            if (StartDatePicker.SelectedDate.HasValue) vm.MonthStart = StartDatePicker.SelectedDate.Value;
+            if (EndDatePicker.SelectedDate.HasValue) vm.MonthEnd = EndDatePicker.SelectedDate.Value;
         }
 
         private void UpdateDbPathDisplay()
@@ -119,30 +134,25 @@ namespace NonGamingDirectUploader.Views
             ((TextBlock)DailyTab.Child).Foreground = (SolidColorBrush)FindResource("TextSecondaryBrush");
         }
 
-        // ── DATE / MONTH ──────────────────────────────────────────────────────
+        // ── DATE / RANGE ──────────────────────────────────────────────────────
         private void DailyDate_Changed(object sender, SelectionChangedEventArgs e)
         {
             if (_vm != null && DailyDatePicker.SelectedDate.HasValue)
                 _vm.SelectedDate = DailyDatePicker.SelectedDate.Value;
         }
 
-        // Selecting a month now drives Start/End date pickers to that month,
-        // so the visible range always matches the dropdown selection.
-        private void MonthCombo_Changed(object sender, SelectionChangedEventArgs e)
+        // Start/End date pickers drive the monthly query directly —
+        // no Month dropdown in between.
+        private void StartDate_Changed(object sender, SelectionChangedEventArgs e)
         {
-            if (_vm == null || MonthCombo.SelectedItem is not ComboBoxItem item) return;
-            int month = int.Parse(item.Tag?.ToString() ?? "1");
-            int year = DateTime.Today.Year;
+            if (_vm != null && StartDatePicker.SelectedDate.HasValue)
+                _vm.MonthStart = StartDatePicker.SelectedDate.Value;
+        }
 
-            var monthStart = new DateTime(year, month, 1);
-            var monthEnd = new DateTime(year, month, DateTime.DaysInMonth(year, month));
-
-            _vm.MonthStart = monthStart;
-            _vm.MonthEnd = monthEnd;
-            _vm.SelectedMonth = item.Content?.ToString() ?? "";
-
-            StartDatePicker.SelectedDate = monthStart;
-            EndDatePicker.SelectedDate = monthEnd;
+        private void EndDate_Changed(object sender, SelectionChangedEventArgs e)
+        {
+            if (_vm != null && EndDatePicker.SelectedDate.HasValue)
+                _vm.MonthEnd = EndDatePicker.SelectedDate.Value;
         }
 
         // ── ACTIONS ───────────────────────────────────────────────────────────
@@ -151,13 +161,87 @@ namespace NonGamingDirectUploader.Views
             if (_vm != null) await _vm.FetchDataAsync();
         }
 
+        /// <summary>
+        /// Bulk upload flow: create a per-table CSV template (opens in Excel via
+        /// the default file association), let the user paste data / save / close,
+        /// read it back, show it in a review window, then hand it to the normal
+        /// upload pipeline (which does the DTE overwrite check).
+        /// </summary>
+        private async void BulkUpload_Click(object sender, RoutedEventArgs e)
+        {
+            if (_vm == null) return;
+
+            string templatePath;
+            try
+            {
+                templatePath = BulkTemplateService.CreateTemplate(_vm.UploaderType, _vm.PreviewColumns);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Could not create the upload template: {ex.Message}",
+                    _vm.DisplayTitle, MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            try
+            {
+                Process.Start(new ProcessStartInfo(templatePath) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Could not open the template automatically: {ex.Message}\n\nYou can open it manually from:\n{templatePath}",
+                    _vm.DisplayTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+
+            MessageBox.Show(
+                $"A blank {_vm.DisplayTitle} upload template has opened in Excel.\n\n" +
+                "1. Paste your data under the header row (do not change the header row).\n" +
+                "2. Save the file (Ctrl+S — keep it as CSV) and close Excel.\n" +
+                "3. Click OK below to load the data back into the app.",
+                _vm.DisplayTitle, MessageBoxButton.OK, MessageBoxImage.Information);
+
+            DataTable dt;
+            try
+            {
+                dt = BulkTemplateService.ReadFilledTemplate(templatePath, _vm.PreviewColumns);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Could not read the template file: {ex.Message}",
+                    _vm.DisplayTitle, MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            if (dt.Rows.Count == 0)
+            {
+                MessageBox.Show("No data rows were found in the template.",
+                    _vm.DisplayTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
+                TryDeleteFile(templatePath);
+                return;
+            }
+
+            var preview = new BulkUploadPreviewWindow(dt, _vm.DisplayTitle)
+            {
+                Owner = Window.GetWindow(this)
+            };
+
+            if (preview.ShowDialog() == true && preview.Confirmed)
+                await _vm.UploadAsync(preview.Data);
+
+            TryDeleteFile(templatePath);
+        }
+
+        private static void TryDeleteFile(string path)
+        {
+            try { File.Delete(path); } catch { /* best-effort cleanup */ }
+        }
+
         private async void Upload_Click(object sender, RoutedEventArgs e)
         {
             if (_vm == null) return;
 
-            // Use the currently loaded PreviewData as the upload payload.
-            // In a real scenario you would load the DataTable from a staging
-            // sheet / file; here we use whatever was fetched for demo purposes.
+            // Uses whatever is currently loaded via "Get Data" or in-grid edits.
             if (_vm.PreviewData == null || _vm.PreviewData.Rows.Count == 0)
             {
                 MessageBox.Show(
@@ -194,22 +278,16 @@ namespace NonGamingDirectUploader.Views
             await _vm.DeleteRowAsync(rowView.Row);
         }
 
-        // Appends a non-bound "Actions" column (Edit / Delete) and pins it
-        // as the first (frozen) column so it stays visible even when the
-        // grid needs horizontal scrolling to show every data column.
-        private void PreviewGrid_AutoGeneratedColumns(object? sender, EventArgs e)
+        // ── PREVIEW COLUMNS ──────────────────────────────────────────────────
+        /// <summary>
+        /// Builds the fixed, ordered set of columns for this uploader's Data
+        /// Preview grid from vm.PreviewColumns, with the Actions column pinned
+        /// first (frozen) and DTE formatted as date-only.
+        /// </summary>
+        private void BuildPreviewColumns()
         {
-            if (PreviewGrid.Columns.Count == 0) return;
-
-            // Remove any stale actions column from a previous bind
-            for (int i = PreviewGrid.Columns.Count - 1; i >= 0; i--)
-            {
-                if (PreviewGrid.Columns[i] is DataGridTemplateColumn tc &&
-                    (string)tc.Header == "Actions")
-                {
-                    PreviewGrid.Columns.RemoveAt(i);
-                }
-            }
+            if (_vm == null) return;
+            PreviewGrid.Columns.Clear();
 
             var actionsColumn = new DataGridTemplateColumn
             {
@@ -222,8 +300,19 @@ namespace NonGamingDirectUploader.Views
             };
             PreviewGrid.Columns.Add(actionsColumn);
 
-            // Pin Edit/Delete as the first, frozen column.
-            actionsColumn.DisplayIndex = 0;
+            foreach (var (field, header) in _vm.PreviewColumns)
+            {
+                var binding = new Binding($"[{field}]");
+                if (string.Equals(field, "DTE", StringComparison.OrdinalIgnoreCase))
+                    binding.StringFormat = "MM/dd/yyyy";
+
+                PreviewGrid.Columns.Add(new DataGridTextColumn
+                {
+                    Header = header,
+                    Binding = binding,
+                    Width = new DataGridLength(1, DataGridLengthUnitType.Star)
+                });
+            }
         }
 
         // ── HELPERS ───────────────────────────────────────────────────────────

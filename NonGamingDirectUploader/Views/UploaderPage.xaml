@@ -163,26 +163,11 @@
                                         SelectedDateChanged="DailyDate_Changed"/>
                         </StackPanel>
 
-                        <!-- MONTHLY RANGE -->
+                        <!-- MONTHLY / DATE RANGE — driven directly by Start/End pickers, no Month dropdown -->
                         <StackPanel x:Name="MonthlySection" Visibility="Collapsed">
-                            <TextBlock Text="Month" Foreground="{StaticResource TextSecondaryBrush}"
+                            <TextBlock Text="Date Range to Extract / Upload" Foreground="{StaticResource TextSecondaryBrush}"
                                        FontSize="12" Margin="0,0,0,6"/>
-                            <ComboBox x:Name="MonthCombo" Margin="0,0,0,12"
-                                      SelectionChanged="MonthCombo_Changed">
-                                <ComboBoxItem Content="January"  Tag="1"/>
-                                <ComboBoxItem Content="February" Tag="2"/>
-                                <ComboBoxItem Content="March"    Tag="3"/>
-                                <ComboBoxItem Content="April"    Tag="4"/>
-                                <ComboBoxItem Content="May"      Tag="5"/>
-                                <ComboBoxItem Content="June"     Tag="6"/>
-                                <ComboBoxItem Content="July"     Tag="7"/>
-                                <ComboBoxItem Content="August"   Tag="8"/>
-                                <ComboBoxItem Content="September" Tag="9"/>
-                                <ComboBoxItem Content="October"  Tag="10"/>
-                                <ComboBoxItem Content="November" Tag="11"/>
-                                <ComboBoxItem Content="December" Tag="12"/>
-                            </ComboBox>
-                            <Grid Margin="0,0,0,6">
+                            <Grid Margin="0,0,0,20">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="*"/>
@@ -190,12 +175,12 @@
                                 <StackPanel Grid.Column="0" Margin="0,0,4,0">
                                     <TextBlock Text="Start Date" Foreground="{StaticResource TextSecondaryBrush}"
                                                FontSize="11" Margin="0,0,0,4"/>
-                                    <DatePicker x:Name="StartDatePicker"/>
+                                    <DatePicker x:Name="StartDatePicker" SelectedDateChanged="StartDate_Changed"/>
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="4,0,0,0">
                                     <TextBlock Text="End Date" Foreground="{StaticResource TextSecondaryBrush}"
                                                FontSize="11" Margin="0,0,0,4"/>
-                                    <DatePicker x:Name="EndDatePicker"/>
+                                    <DatePicker x:Name="EndDatePicker" SelectedDateChanged="EndDate_Changed"/>
                                 </StackPanel>
                             </Grid>
                         </StackPanel>
@@ -210,10 +195,14 @@
                                 HorizontalAlignment="Stretch" Margin="0,0,0,8"
                                 Click="GetData_Click"/>
 
+                        <Button Content="📁  Bulk Upload (Excel)" Style="{StaticResource GhostButton}"
+                                HorizontalAlignment="Stretch" Margin="0,0,0,8"
+                                Click="BulkUpload_Click" Visibility="Collapsed"/>
+
                         <Button x:Name="UploadBtn" Content="⬆  Upload to Database"
                                 Style="{StaticResource SuccessButton}"
                                 HorizontalAlignment="Stretch" Margin="0,0,0,8"
-                                Click="Upload_Click"/>
+                                Click="BulkUpload_Click"/>
 
                         <Button Content="✕  Clear Log" Style="{StaticResource GhostButton}"
                                 HorizontalAlignment="Stretch" Margin="0,0,0,0"
@@ -291,18 +280,18 @@
                                        HorizontalAlignment="Center"/>
                             <TextBlock Text="No data loaded" Foreground="{StaticResource TextMutedBrush}"
                                        FontSize="14" HorizontalAlignment="Center" Margin="0,8,0,4"/>
-                            <TextBlock Text="Click 'Get Data' to fetch from the database"
+                            <TextBlock Text="Click 'Get Data' to fetch, or 'Bulk Upload' to load from Excel"
                                        Foreground="{StaticResource TextMutedBrush}"
                                        FontSize="11" HorizontalAlignment="Center"/>
                         </StackPanel>
 
-                        <!-- Grid can scroll both ways when maximized isn't enough to fit
-                             every column, and the first column (Actions) stays frozen
-                             in view so Edit/Delete are always reachable. -->
+                        <!-- Columns are built manually in code-behind from the VM's
+                             PreviewColumns list (fixed set, in order, DTE date-only).
+                             AutoGenerateColumns is off. First column (Actions) is
+                             frozen so Edit/Delete stay visible while scrolling. -->
                         <DataGrid x:Name="PreviewGrid" Grid.Row="1"
                                   Visibility="Collapsed"
-                                  AutoGenerateColumns="True"
-                                  AutoGeneratedColumns="PreviewGrid_AutoGeneratedColumns"
+                                  AutoGenerateColumns="False"
                                   HorizontalScrollBarVisibility="Auto"
                                   VerticalScrollBarVisibility="Auto"
                                   FrozenColumnCount="1"

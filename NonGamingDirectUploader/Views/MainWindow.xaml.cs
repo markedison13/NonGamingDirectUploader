@@ -1,5 +1,8 @@
-﻿using NonGamingDirectUploader.Models;
+﻿using NonGamingDirectUploader.Helpers;
+using NonGamingDirectUploader.Models;
 using NonGamingDirectUploader.ViewModels;
+using System;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -28,6 +31,46 @@ namespace NonGamingDirectUploader.Views
 
             PageLabel.Text = "Others Uploader";
             PageHost.Content = _othersPage;
+
+            // Warm up the OLE DB driver for every configured database (both
+            // SEC and SN) right away, on app launch. The native ACE OLEDB
+            // provider is typically only ever loaded once per process — if
+            // that first load happens while the user is interacting with the
+            // UI (e.g. clicking the SN radio button), a driver-level fault can
+            // surface as a crash. Doing it here, before any button is clicked,
+            // moves that risk to startup where it's silent and harmless.
+            _ = WarmUpDatabaseDriversAsync();
+        }
+
+        private async System.Threading.Tasks.Task WarmUpDatabaseDriversAsync()
+        {
+            // Touch every distinct configured database path once, regardless
+            // of which Property is currently selected.
+            var paths = new HashSet<string>();
+            foreach (UploaderType type in Enum.GetValues(typeof(UploaderType)))
+                foreach (PropertyType prop in Enum.GetValues(typeof(PropertyType)))
+                    if (DatabaseConfig.TryGetPath(type, prop, out var path))
+                        paths.Add(path);
+
+            foreach (var path in paths)
+            {
+                try { await DatabaseService.TestConnectionAsync(path); }
+                catch
+                {
+                    // Ignore here — this is a silent warm-up. Real connection
+                    // problems are still shown normally via "Test Connection"
+                    // or when the user actually loads/uploads data.
+                }
+            }
+
+            // Now run the normal, UI-visible connection test for the
+            // currently-selected property on every uploader tab, so the
+            // status badges reflect real connectivity as soon as launch
+            // finishes.
+            await _vm.OthersVM.TestConnectionAsync();
+            await _vm.FnBVM.TestConnectionAsync();
+            await _vm.HotelVM.TestConnectionAsync();
+            await _vm.VisitationVM.TestConnectionAsync();
         }
 
         // ── Navigation ────────────────────────────────────────────────────────

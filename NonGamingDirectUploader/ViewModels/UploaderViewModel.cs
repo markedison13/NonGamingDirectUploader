@@ -2,8 +2,10 @@
 using NonGamingDirectUploader.Models;
 using NonGamingDirectUploader.ViewModels;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Data;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -20,6 +22,13 @@ namespace NonGamingDirectUploader.ViewModels
         public abstract UploaderType UploaderType { get; }
         public abstract string DisplayTitle { get; }
         public abstract string AccentHex { get; }
+
+        /// <summary>
+        /// The columns shown in the Data Preview grid (and used as the header
+        /// row of the bulk-upload template), in display order.
+        /// Field = actual DB/DataTable column name. Header = friendly label.
+        /// </summary>
+        public abstract (string Field, string Header)[] PreviewColumns { get; }
 
         // ── Database (resolved from backend config, not user-selected) ─────────
         /// <summary>
@@ -209,7 +218,11 @@ namespace NonGamingDirectUploader.ViewModels
         }
 
         /// <summary>
-        /// Main upload flow — mirrors VBA CheckExist → deleteData → toUpload.
+        /// Main upload flow. Always inspects the DTE column of the data being
+        /// uploaded (whether it came from Get Data, an in-grid edit, or the
+        /// bulk-upload Excel template) and — for every distinct date already
+        /// present in the target table — prompts once to confirm overwrite
+        /// before deleting and re-inserting.
         /// </summary>
         public async Task UploadAsync(DataTable uploadData)
         {
@@ -219,44 +232,65 @@ namespace NonGamingDirectUploader.ViewModels
                 SetStatus("No data to upload.", "#FFFF8C00"); return;
             }
 
+            if (!uploadData.Columns.Contains("DTE"))
+            {
+                MessageBox.Show(
+                    "Upload data must include a DTE (date) column.",
+                    DisplayTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var dates = ExtractDistinctDates(uploadData);
+            if (dates.Count == 0)
+            {
+                MessageBox.Show(
+                    "No valid DTE (date) values were found in the data to upload.",
+                    DisplayTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             IsBusy = true;
             Progress = 0;
             try
             {
-                if (IsDailyMode)
+                SetStatus("Checking for existing records…", "#FFFF8C00");
+                var existingDates = new List<DateTime>();
+                foreach (var d in dates)
                 {
-                    SetStatus("Checking for existing records…", "#FFFF8C00");
-                    bool exists = await DatabaseService.DateExistsAsync(ResolvedDbPath, UploaderType, SelectedDate);
+                    if (await DatabaseService.DateExistsAsync(ResolvedDbPath, UploaderType, d))
+                        existingDates.Add(d);
+                }
 
-                    if (exists)
-                    {
-                        var result = MessageBox.Show(
-                            $"{DisplayTitle} Uploader: Data for {SelectedDate:MM/dd/yyyy} already exists. Do you want to update?",
-                            "Update", MessageBoxButton.OKCancel, MessageBoxImage.Question);
-                        if (result != MessageBoxResult.OK) { SetStatus("Upload cancelled.", "#FF8B949E"); return; }
-
-                        SetStatus("Deleting existing records…", "#FFFF8C00");
-                        await DatabaseService.DeleteDailyAsync(ResolvedDbPath, UploaderType, SelectedDate);
-                        Log($"Deleted existing data for {SelectedDate:MM/dd/yyyy}.");
-                    }
-                    else
-                    {
-                        var result = MessageBox.Show(
-                            $"{DisplayTitle} Uploader: Are you sure you want to upload data for {SelectedDate:MM/dd/yyyy}?",
-                            "Upload", MessageBoxButton.OKCancel, MessageBoxImage.Question);
-                        if (result != MessageBoxResult.OK) { SetStatus("Upload cancelled.", "#FF8B949E"); return; }
-                    }
+                string prompt;
+                string caption;
+                MessageBoxImage icon;
+                if (existingDates.Count > 0)
+                {
+                    var dateList = string.Join(", ", existingDates.OrderBy(d => d).Select(d => d.ToString("MM/dd/yyyy")));
+                    prompt = $"{DisplayTitle} Uploader: data already exists for {existingDates.Count} date(s):\n{dateList}\n\n" +
+                             "Do you want to overwrite the existing data for these dates?";
+                    caption = "Overwrite Existing Data";
+                    icon = MessageBoxImage.Warning;
                 }
                 else
                 {
-                    var result = MessageBox.Show(
-                        $"Are you sure you want to upload {DisplayTitle} data for {SelectedMonth}?",
-                        "Monthly Upload", MessageBoxButton.OKCancel, MessageBoxImage.Question);
-                    if (result != MessageBoxResult.OK) { SetStatus("Upload cancelled.", "#FF8B949E"); return; }
+                    var dateList = string.Join(", ", dates.OrderBy(d => d).Select(d => d.ToString("MM/dd/yyyy")));
+                    prompt = $"{DisplayTitle} Uploader: are you sure you want to upload data for {dateList}?";
+                    caption = "Upload";
+                    icon = MessageBoxImage.Question;
+                }
 
-                    SetStatus("Deleting monthly records…", "#FFFF8C00");
-                    await DatabaseService.DeleteMonthlyAsync(ResolvedDbPath, UploaderType, MonthStart, MonthEnd);
-                    Log($"Deleted monthly data for {MonthStart:MM/dd/yyyy} – {MonthEnd:MM/dd/yyyy}.");
+                var result = MessageBox.Show(prompt, caption, MessageBoxButton.OKCancel, icon);
+                if (result != MessageBoxResult.OK) { SetStatus("Upload cancelled.", "#FF8B949E"); return; }
+
+                if (existingDates.Count > 0)
+                {
+                    SetStatus("Deleting existing records…", "#FFFF8C00");
+                    foreach (var d in existingDates)
+                    {
+                        await DatabaseService.DeleteDailyAsync(ResolvedDbPath, UploaderType, d);
+                        Log($"Deleted existing data for {d:MM/dd/yyyy}.");
+                    }
                 }
 
                 SetStatus("Uploading records…", "#FFFF8C00");
@@ -273,6 +307,25 @@ namespace NonGamingDirectUploader.ViewModels
                 Log($"ERROR: {ex.Message}");
             }
             finally { IsBusy = false; }
+        }
+
+        /// <summary>Extracts the distinct DTE dates (date part only) present in a DataTable.</summary>
+        private static List<DateTime> ExtractDistinctDates(DataTable data)
+        {
+            var dates = new List<DateTime>();
+            foreach (DataRow row in data.Rows)
+            {
+                var raw = row["DTE"];
+                if (raw == null || raw == DBNull.Value) continue;
+
+                DateTime d;
+                if (raw is DateTime dt) d = dt.Date;
+                else if (!DateTime.TryParse(raw.ToString(), out d)) continue;
+                else d = d.Date;
+
+                if (!dates.Contains(d)) dates.Add(d);
+            }
+            return dates;
         }
 
         /// <summary>Persists an in-place edit of a single preview row back to the database.</summary>
@@ -371,6 +424,15 @@ namespace NonGamingDirectUploader.ViewModels
         public override UploaderType UploaderType => UploaderType.Others;
         public override string DisplayTitle => "Others";
         public override string AccentHex => "#FF2F81F7";
+
+        public override (string Field, string Header)[] PreviewColumns => new[]
+        {
+            ("DTE",       "DTE"),
+            ("Dept_Type", "Dept Type"),
+            ("Dept_Desc", "Dept Desc"),
+            ("Revenue",   "Revenue"),
+            ("Comp",      "Comp"),
+        };
     }
 
     public class FnBViewModel : UploaderViewModel
@@ -378,6 +440,16 @@ namespace NonGamingDirectUploader.ViewModels
         public override UploaderType UploaderType => UploaderType.FnB;
         public override string DisplayTitle => "F&B";
         public override string AccentHex => "#FF3FB950";
+
+        public override (string Field, string Header)[] PreviewColumns => new[]
+        {
+            ("DTE",         "DTE"),
+            ("Rev_Center",  "Rev Center"),
+            ("Net_Sales",   "Net Sales"),
+            ("Covers",      "Covers"),
+            ("Comp_Rev",    "Comp Rev"),
+            ("Comp_Covers", "Comp Covers"),
+        };
     }
 
     public class HotelViewModel : UploaderViewModel
@@ -385,6 +457,16 @@ namespace NonGamingDirectUploader.ViewModels
         public override UploaderType UploaderType => UploaderType.Hotel;
         public override string DisplayTitle => "Hotel";
         public override string AccentHex => "#FFFF8C00";
+
+        public override (string Field, string Header)[] PreviewColumns => new[]
+        {
+            ("DTE",              "DTE"),
+            ("Area_Type",        "Area Type"),
+            ("Description_Type", "Description Type"),
+            ("Total_Revenue",    "Total Revenue"),
+            ("Comp_Revenue",     "Comp Revenue"),
+            ("Occupied_Room",    "Occupied Room"),
+        };
     }
 
     public class VisitationViewModel : UploaderViewModel
@@ -392,5 +474,12 @@ namespace NonGamingDirectUploader.ViewModels
         public override UploaderType UploaderType => UploaderType.Visitation;
         public override string DisplayTitle => "Visitation";
         public override string AccentHex => "#FF8957E5";
+
+        public override (string Field, string Header)[] PreviewColumns => new[]
+        {
+            ("DTE",        "DTE"),
+            ("Visitation", "Visitation"),
+            ("SRC",        "SRC"),
+        };
     }
 }
