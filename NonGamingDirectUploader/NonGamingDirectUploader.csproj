@@ -7,11 +7,23 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
 
+		<!--
+      Built as x64 because "Microsoft.ACE.OLEDB.12.0 provider is not
+      registered" when running x86 means the 32-bit driver isn't installed on
+      this machine — only the 64-bit Access Database Engine is present (common
+      with 64-bit Office installs). The app's bitness must match whichever
+      ACE OLEDB driver is actually installed.
 
+      If this ALSO throws "provider not registered" (or the earlier
+      SEHException comes back), neither driver is installed at all — see the
+      installation steps below instead of toggling this setting further.
+    -->
+		<PlatformTarget>x64</PlatformTarget>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<PackageReference Include="System.Data.OleDb" Version="10.0.9" />
+		<PackageReference Include="ClosedXML" Version="0.102.2" />
 	</ItemGroup>
 
 </Project>

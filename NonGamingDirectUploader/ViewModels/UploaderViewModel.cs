@@ -24,11 +24,13 @@ namespace NonGamingDirectUploader.ViewModels
         public abstract string AccentHex { get; }
 
         /// <summary>
-        /// The columns shown in the Data Preview grid (and used as the header
-        /// row of the bulk-upload template), in display order.
-        /// Field = actual DB/DataTable column name. Header = friendly label.
+        /// The columns for this table, in order: DB/DataTable field name,
+        /// friendly display header, and expected data type. Used for the Data
+        /// Preview grid, the Bulk Upload template, and — critically — for the
+        /// automation import's content validation, since automated files are
+        /// read by column position, not by matching header text.
         /// </summary>
-        public abstract (string Field, string Header)[] PreviewColumns { get; }
+        public abstract (string Field, string Header, ColumnDataType Type)[] PreviewColumns { get; }
 
         // ── Database (resolved from backend config, not user-selected) ─────────
         /// <summary>
@@ -185,6 +187,12 @@ namespace NonGamingDirectUploader.ViewModels
                     SetStatus("✗ Cannot connect. Check the configured database path/driver.", "#FFFF4444");
                 Log(IsConnected ? "Connection successful." : "Connection failed.");
             }
+            catch (Exception ex)
+            {
+                IsConnected = false;
+                SetStatus($"✗ Connection error: {ex.Message}", "#FFFF4444");
+                Log($"ERROR: {ex.Message}");
+            }
             finally { IsBusy = false; }
         }
 
@@ -218,35 +226,59 @@ namespace NonGamingDirectUploader.ViewModels
         }
 
         /// <summary>
-        /// Main upload flow. Always inspects the DTE column of the data being
-        /// uploaded (whether it came from Get Data, an in-grid edit, or the
-        /// bulk-upload Excel template) and — for every distinct date already
-        /// present in the target table — prompts once to confirm overwrite
-        /// before deleting and re-inserting.
+        /// Main upload flow, interactive. Checks the DTE column of the data
+        /// being uploaded and — for any distinct date already present in the
+        /// target table — prompts once to confirm overwrite before deleting
+        /// and re-inserting.
         /// </summary>
-        public async Task UploadAsync(DataTable uploadData)
+        public Task UploadAsync(DataTable uploadData)
+            => ExecuteUploadAsync(uploadData, interactive: true);
+
+        /// <summary>
+        /// Same upload pipeline as UploadAsync (DTE overwrite check, delete,
+        /// insert) but with no confirmation dialogs — any conflicting dates
+        /// are overwritten automatically. Used by unattended/automated imports
+        /// (the folder-watching automation) where no one is present to click
+        /// a prompt. Returns a summary instead of showing a "done" MessageBox.
+        /// </summary>
+        public Task<(bool Success, string Message, int RowsUploaded)> UploadSilentAsync(DataTable uploadData)
+            => ExecuteUploadAsync(uploadData, interactive: false);
+
+        private async Task<(bool Success, string Message, int RowsUploaded)> ExecuteUploadAsync(DataTable uploadData, bool interactive)
         {
-            if (!CheckDb()) return;
+            if (!HasDb)
+            {
+                var msg = $"No database is configured for {DisplayTitle} / {Property} property.";
+                SetStatus(msg, "#FFFF4444");
+                if (interactive)
+                    MessageBox.Show(msg, DisplayTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
+                return (false, msg, 0);
+            }
+
             if (uploadData == null || uploadData.Rows.Count == 0)
             {
-                SetStatus("No data to upload.", "#FFFF8C00"); return;
+                const string msg = "No data to upload.";
+                SetStatus(msg, "#FFFF8C00");
+                return (false, msg, 0);
             }
 
             if (!uploadData.Columns.Contains("DTE"))
             {
-                MessageBox.Show(
-                    "Upload data must include a DTE (date) column.",
-                    DisplayTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
+                const string msg = "Upload data must include a DTE (date) column.";
+                SetStatus(msg, "#FFFF4444");
+                if (interactive)
+                    MessageBox.Show(msg, DisplayTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
+                return (false, msg, 0);
             }
 
             var dates = ExtractDistinctDates(uploadData);
             if (dates.Count == 0)
             {
-                MessageBox.Show(
-                    "No valid DTE (date) values were found in the data to upload.",
-                    DisplayTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
+                const string msg = "No valid DTE (date) values were found in the data to upload.";
+                SetStatus(msg, "#FFFF4444");
+                if (interactive)
+                    MessageBox.Show(msg, DisplayTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
+                return (false, msg, 0);
             }
 
             IsBusy = true;
@@ -261,27 +293,39 @@ namespace NonGamingDirectUploader.ViewModels
                         existingDates.Add(d);
                 }
 
-                string prompt;
-                string caption;
-                MessageBoxImage icon;
-                if (existingDates.Count > 0)
+                if (interactive)
+                {
+                    string prompt;
+                    string caption;
+                    MessageBoxImage icon;
+                    if (existingDates.Count > 0)
+                    {
+                        var dateList = string.Join(", ", existingDates.OrderBy(d => d).Select(d => d.ToString("MM/dd/yyyy")));
+                        prompt = $"{DisplayTitle} Uploader: data already exists for {existingDates.Count} date(s):\n{dateList}\n\n" +
+                                 "Do you want to overwrite the existing data for these dates?";
+                        caption = "Overwrite Existing Data";
+                        icon = MessageBoxImage.Warning;
+                    }
+                    else
+                    {
+                        var dateList = string.Join(", ", dates.OrderBy(d => d).Select(d => d.ToString("MM/dd/yyyy")));
+                        prompt = $"{DisplayTitle} Uploader: are you sure you want to upload data for {dateList}?";
+                        caption = "Upload";
+                        icon = MessageBoxImage.Question;
+                    }
+
+                    var result = MessageBox.Show(prompt, caption, MessageBoxButton.OKCancel, icon);
+                    if (result != MessageBoxResult.OK)
+                    {
+                        SetStatus("Upload cancelled.", "#FF8B949E");
+                        return (false, "Upload cancelled by user.", 0);
+                    }
+                }
+                else if (existingDates.Count > 0)
                 {
                     var dateList = string.Join(", ", existingDates.OrderBy(d => d).Select(d => d.ToString("MM/dd/yyyy")));
-                    prompt = $"{DisplayTitle} Uploader: data already exists for {existingDates.Count} date(s):\n{dateList}\n\n" +
-                             "Do you want to overwrite the existing data for these dates?";
-                    caption = "Overwrite Existing Data";
-                    icon = MessageBoxImage.Warning;
+                    Log($"Automated import: overwriting existing data for {dateList}.");
                 }
-                else
-                {
-                    var dateList = string.Join(", ", dates.OrderBy(d => d).Select(d => d.ToString("MM/dd/yyyy")));
-                    prompt = $"{DisplayTitle} Uploader: are you sure you want to upload data for {dateList}?";
-                    caption = "Upload";
-                    icon = MessageBoxImage.Question;
-                }
-
-                var result = MessageBox.Show(prompt, caption, MessageBoxButton.OKCancel, icon);
-                if (result != MessageBoxResult.OK) { SetStatus("Upload cancelled.", "#FF8B949E"); return; }
 
                 if (existingDates.Count > 0)
                 {
@@ -298,13 +342,17 @@ namespace NonGamingDirectUploader.ViewModels
                 Progress = 100;
                 TotalRows = uploaded;
                 Log($"✓ Upload complete — {uploaded} row(s) inserted.");
-                SetStatus($"✓ Done! {uploaded} record(s) uploaded.", "#FF3FB950");
-                MessageBox.Show("Done uploading the file.", DisplayTitle, MessageBoxButton.OK, MessageBoxImage.Information);
+                var successMsg = $"{uploaded} record(s) uploaded.";
+                SetStatus($"✓ Done! {successMsg}", "#FF3FB950");
+                if (interactive)
+                    MessageBox.Show("Done uploading the file.", DisplayTitle, MessageBoxButton.OK, MessageBoxImage.Information);
+                return (true, successMsg, uploaded);
             }
             catch (Exception ex)
             {
                 SetStatus($"✗ Upload failed: {ex.Message}", "#FFFF4444");
                 Log($"ERROR: {ex.Message}");
+                return (false, ex.Message, 0);
             }
             finally { IsBusy = false; }
         }
@@ -425,13 +473,13 @@ namespace NonGamingDirectUploader.ViewModels
         public override string DisplayTitle => "Others";
         public override string AccentHex => "#FF2F81F7";
 
-        public override (string Field, string Header)[] PreviewColumns => new[]
+        public override (string Field, string Header, ColumnDataType Type)[] PreviewColumns => new[]
         {
-            ("DTE",       "DTE"),
-            ("Dept_Type", "Dept Type"),
-            ("Dept_Desc", "Dept Desc"),
-            ("Revenue",   "Revenue"),
-            ("Comp",      "Comp"),
+            ("DTE",       "DTE",       ColumnDataType.Date),
+            ("Dept_Type", "Dept Type", ColumnDataType.Text),
+            ("Dept_Desc", "Dept Desc", ColumnDataType.Text),
+            ("Revenue",   "Revenue",   ColumnDataType.Number),
+            ("Comp",      "Comp",      ColumnDataType.Number),
         };
     }
 
@@ -441,14 +489,14 @@ namespace NonGamingDirectUploader.ViewModels
         public override string DisplayTitle => "F&B";
         public override string AccentHex => "#FF3FB950";
 
-        public override (string Field, string Header)[] PreviewColumns => new[]
+        public override (string Field, string Header, ColumnDataType Type)[] PreviewColumns => new[]
         {
-            ("DTE",         "DTE"),
-            ("Rev_Center",  "Rev Center"),
-            ("Net_Sales",   "Net Sales"),
-            ("Covers",      "Covers"),
-            ("Comp_Rev",    "Comp Rev"),
-            ("Comp_Covers", "Comp Covers"),
+            ("DTE",         "DTE",         ColumnDataType.Date),
+            ("Rev_Center",  "Rev Center",  ColumnDataType.Text),
+            ("Net_Sales",   "Net Sales",   ColumnDataType.Number),
+            ("Covers",      "Covers",      ColumnDataType.Number),
+            ("Comp_Rev",    "Comp Rev",    ColumnDataType.Number),
+            ("Comp_Covers", "Comp Covers", ColumnDataType.Number),
         };
     }
 
@@ -458,14 +506,14 @@ namespace NonGamingDirectUploader.ViewModels
         public override string DisplayTitle => "Hotel";
         public override string AccentHex => "#FFFF8C00";
 
-        public override (string Field, string Header)[] PreviewColumns => new[]
+        public override (string Field, string Header, ColumnDataType Type)[] PreviewColumns => new[]
         {
-            ("DTE",              "DTE"),
-            ("Area_Type",        "Area Type"),
-            ("Description_Type", "Description Type"),
-            ("Total_Revenue",    "Total Revenue"),
-            ("Comp_Revenue",     "Comp Revenue"),
-            ("Occupied_Room",    "Occupied Room"),
+            ("DTE",              "DTE",              ColumnDataType.Date),
+            ("Area_Type",        "Area Type",        ColumnDataType.Text),
+            ("Description_Type", "Description Type", ColumnDataType.Text),
+            ("Total_Revenue",    "Total Revenue",     ColumnDataType.Number),
+            ("Comp_Revenue",     "Comp Revenue",      ColumnDataType.Number),
+            ("Occupied_Rooms",    "Occupied Room",     ColumnDataType.Number),
         };
     }
 
@@ -475,11 +523,11 @@ namespace NonGamingDirectUploader.ViewModels
         public override string DisplayTitle => "Visitation";
         public override string AccentHex => "#FF8957E5";
 
-        public override (string Field, string Header)[] PreviewColumns => new[]
+        public override (string Field, string Header, ColumnDataType Type)[] PreviewColumns => new[]
         {
-            ("DTE",        "DTE"),
-            ("Visitation", "Visitation"),
-            ("SRC",        "SRC"),
+            ("DTE",        "DTE",        ColumnDataType.Date),
+            ("Visitation", "Visitation", ColumnDataType.Number),
+            ("SRC",        "SRC",        ColumnDataType.Text),
         };
     }
 }

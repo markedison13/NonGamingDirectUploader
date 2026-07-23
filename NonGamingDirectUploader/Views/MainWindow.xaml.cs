@@ -44,8 +44,6 @@ namespace NonGamingDirectUploader.Views
 
         private async System.Threading.Tasks.Task WarmUpDatabaseDriversAsync()
         {
-            // Touch every distinct configured database path once, regardless
-            // of which Property is currently selected.
             var paths = new HashSet<string>();
             foreach (UploaderType type in Enum.GetValues(typeof(UploaderType)))
                 foreach (PropertyType prop in Enum.GetValues(typeof(PropertyType)))
@@ -55,22 +53,42 @@ namespace NonGamingDirectUploader.Views
             foreach (var path in paths)
             {
                 try { await DatabaseService.TestConnectionAsync(path); }
-                catch
-                {
-                    // Ignore here — this is a silent warm-up. Real connection
-                    // problems are still shown normally via "Test Connection"
-                    // or when the user actually loads/uploads data.
-                }
+                catch { /* silent warm-up only */ }
             }
 
-            // Now run the normal, UI-visible connection test for the
-            // currently-selected property on every uploader tab, so the
-            // status badges reflect real connectivity as soon as launch
-            // finishes.
             await _vm.OthersVM.TestConnectionAsync();
             await _vm.FnBVM.TestConnectionAsync();
             await _vm.HotelVM.TestConnectionAsync();
             await _vm.VisitationVM.TestConnectionAsync();
+        }
+
+        // ── Automation ────────────────────────────────────────────────────────
+        /// <summary>
+        /// Manually triggers one full automation import pass — the same logic
+        /// that runs headlessly at 5:00 AM via Task Scheduler — so you can test
+        /// it without waiting or configuring the schedule first.
+        /// </summary>
+        private async void RunAutomation_Click(object sender, RoutedEventArgs e)
+        {
+            var btn = (Button)sender;
+            btn.IsEnabled = false;
+            btn.Content = "⟳  Running…";
+            try
+            {
+                var log = await AutomationService.RunImportAsync();
+                var summary = string.Join(Environment.NewLine, log);
+                MessageBox.Show(summary, "Automation Run Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Automation run failed: {ex.Message}", "Automation Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                btn.IsEnabled = true;
+                btn.Content = "▶  Run Automation Now";
+            }
         }
 
         // ── Navigation ────────────────────────────────────────────────────────

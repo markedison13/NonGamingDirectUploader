@@ -192,10 +192,16 @@
                             BorderBrush="{StaticResource BorderBrush}"
                             BorderThickness="0,1,0,0">
                         <StackPanel>
+                            <Button Content="▶  Run Automation Now" Style="{StaticResource GhostButton}"
+                                    HorizontalAlignment="Stretch" Margin="0,0,0,10"
+                                    Click="RunAutomation_Click"/>
                             <TextBlock Text="FI-FP&amp;A · OOD System" FontSize="10"
                                        Foreground="{StaticResource TextMutedBrush}"/>
                             <TextBlock Text="v2.0 — WPF Edition" FontSize="10"
                                        Foreground="{StaticResource TextMutedBrush}" Margin="0,2,0,0"/>
+                            <TextBlock Text="Daily import runs via Task Scheduler at 5:00 AM" FontSize="9"
+                                       Foreground="{StaticResource TextMutedBrush}" Margin="0,6,0,0"
+                                       TextWrapping="Wrap"/>
                         </StackPanel>
                     </Border>
                 </Grid>
@@ -229,7 +235,7 @@
                                 <TextBlock Text="⇑" Foreground="White" FontSize="14"
                                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
-                            <TextBlock Text="OOD Uploader" Foreground="{StaticResource TextPrimaryBrush}"
+                            <TextBlock Text="FPA Uploader" Foreground="{StaticResource TextPrimaryBrush}"
                                        FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
                             <TextBlock Text=" · FI-FP&amp;A" Foreground="{StaticResource TextSecondaryBrush}"
                                        FontSize="13" VerticalAlignment="Center"/>

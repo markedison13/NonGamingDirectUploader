@@ -162,10 +162,11 @@ namespace NonGamingDirectUploader.Views
         }
 
         /// <summary>
-        /// Bulk upload flow: create a per-table CSV template (opens in Excel via
-        /// the default file association), let the user paste data / save / close,
-        /// read it back, show it in a review window, then hand it to the normal
-        /// upload pipeline (which does the DTE overwrite check).
+        /// Bulk upload flow: create a per-table .xlsx template (a real Excel
+        /// workbook, opens in Excel via the default file association), let
+        /// the user paste data / save / close, read it back with
+        /// ExcelTemplateService, show it in a review window, then hand it to
+        /// the normal upload pipeline (which does the DTE overwrite check).
         /// </summary>
         private async void BulkUpload_Click(object sender, RoutedEventArgs e)
         {
@@ -197,14 +198,14 @@ namespace NonGamingDirectUploader.Views
             MessageBox.Show(
                 $"A blank {_vm.DisplayTitle} upload template has opened in Excel.\n\n" +
                 "1. Paste your data under the header row (do not change the header row).\n" +
-                "2. Save the file (Ctrl+S — keep it as CSV) and close Excel.\n" +
+                "2. Save the file (Ctrl+S) and close Excel.\n" +
                 "3. Click OK below to load the data back into the app.",
                 _vm.DisplayTitle, MessageBoxButton.OK, MessageBoxImage.Information);
 
             DataTable dt;
             try
             {
-                dt = BulkTemplateService.ReadFilledTemplate(templatePath, _vm.PreviewColumns);
+                dt = ExcelTemplateService.ReadXlsxFile(templatePath, _vm.PreviewColumns);
             }
             catch (Exception ex)
             {
@@ -300,7 +301,7 @@ namespace NonGamingDirectUploader.Views
             };
             PreviewGrid.Columns.Add(actionsColumn);
 
-            foreach (var (field, header) in _vm.PreviewColumns)
+            foreach (var (field, header, _) in _vm.PreviewColumns)
             {
                 var binding = new Binding($"[{field}]");
                 if (string.Equals(field, "DTE", StringComparison.OrdinalIgnoreCase))
