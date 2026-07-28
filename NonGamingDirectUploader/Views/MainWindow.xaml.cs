@@ -12,11 +12,20 @@ namespace NonGamingDirectUploader.Views
     public partial class MainWindow : Window
     {
         private readonly MainViewModel _vm = new();
+
+        // NonGaming pages
         private readonly UploaderPage _othersPage = new();
         private readonly UploaderPage _fnBPage = new();
         private readonly UploaderPage _hotelPage = new();
         private readonly UploaderPage _visitationPage = new();
+
+        // Gaming pages
+        private readonly UploaderPage _massPage = new();
+        private readonly UploaderPage _vipPage = new();
+        private readonly UploaderPage _junketPage = new();
+
         private string _activeTag = "Others";
+        private BusinessLine _activeLine = BusinessLine.NonGaming;
 
         public MainWindow()
         {
@@ -29,16 +38,16 @@ namespace NonGamingDirectUploader.Views
             _hotelPage.SetViewModel(_vm.HotelVM);
             _visitationPage.SetViewModel(_vm.VisitationVM);
 
+            _massPage.SetViewModel(_vm.MassVM);
+            _vipPage.SetViewModel(_vm.VIPVM);
+            _junketPage.SetViewModel(_vm.JunketVM);
+
             PageLabel.Text = "Others Uploader";
             PageHost.Content = _othersPage;
 
             // Warm up the OLE DB driver for every configured database (both
-            // SEC and SN) right away, on app launch. The native ACE OLEDB
-            // provider is typically only ever loaded once per process — if
-            // that first load happens while the user is interacting with the
-            // UI (e.g. clicking the SN radio button), a driver-level fault can
-            // surface as a crash. Doing it here, before any button is clicked,
-            // moves that risk to startup where it's silent and harmless.
+            // SEC and SN, across both business lines) right away, on app
+            // launch — before any button is clicked.
             _ = WarmUpDatabaseDriversAsync();
         }
 
@@ -60,14 +69,13 @@ namespace NonGamingDirectUploader.Views
             await _vm.FnBVM.TestConnectionAsync();
             await _vm.HotelVM.TestConnectionAsync();
             await _vm.VisitationVM.TestConnectionAsync();
+
+            await _vm.MassVM.TestConnectionAsync();
+            await _vm.VIPVM.TestConnectionAsync();
+            await _vm.JunketVM.TestConnectionAsync();
         }
 
         // ── Automation ────────────────────────────────────────────────────────
-        /// <summary>
-        /// Manually triggers one full automation import pass — the same logic
-        /// that runs headlessly at 5:00 AM via Task Scheduler — so you can test
-        /// it without waiting or configuring the schedule first.
-        /// </summary>
         private async void RunAutomation_Click(object sender, RoutedEventArgs e)
         {
             var btn = (Button)sender;
@@ -91,6 +99,29 @@ namespace NonGamingDirectUploader.Views
             }
         }
 
+        // ── Business line switch (NonGaming / Gaming) ────────────────────────
+        private void BusinessLineCombo_Changed(object sender, SelectionChangedEventArgs e)
+        {
+            if (BusinessLineCombo.SelectedItem is not ComboBoxItem item) return;
+            var selected = item.Content?.ToString() == "Gaming" ? BusinessLine.Gaming : BusinessLine.NonGaming;
+
+            _activeLine = selected;
+            _vm.ActiveBusinessLine = selected;
+
+            if (selected == BusinessLine.NonGaming)
+            {
+                NonGamingNavPanel.Visibility = Visibility.Visible;
+                GamingNavPanel.Visibility = Visibility.Collapsed;
+                SwitchTo("Others");
+            }
+            else
+            {
+                NonGamingNavPanel.Visibility = Visibility.Collapsed;
+                GamingNavPanel.Visibility = Visibility.Visible;
+                SwitchTo("Mass");
+            }
+        }
+
         // ── Navigation ────────────────────────────────────────────────────────
         private void Nav_Click(object sender, RoutedEventArgs e)
         {
@@ -102,21 +133,28 @@ namespace NonGamingDirectUploader.Views
         {
             _activeTag = tag;
 
-            // Reset all nav styles
+            // Reset all nav styles across BOTH panels
             NavOthers.Style = (Style)FindResource("NavButton");
             NavFnB.Style = (Style)FindResource("NavButton");
             NavHotel.Style = (Style)FindResource("NavButton");
             NavVisitation.Style = (Style)FindResource("NavButton");
+            NavMass.Style = (Style)FindResource("NavButton");
+            NavVIP.Style = (Style)FindResource("NavButton");
+            NavJunket.Style = (Style)FindResource("NavButton");
 
             // Hide all dots
             DotOthers.Visibility = Visibility.Collapsed;
             DotFnB.Visibility = Visibility.Collapsed;
             DotHotel.Visibility = Visibility.Collapsed;
             DotVisitation.Visibility = Visibility.Collapsed;
+            DotMass.Visibility = Visibility.Collapsed;
+            DotVIP.Visibility = Visibility.Collapsed;
+            DotJunket.Visibility = Visibility.Collapsed;
 
             // Activate selected
             switch (tag)
             {
+                // NonGaming
                 case "Others":
                     PageHost.Content = _othersPage;
                     NavOthers.Style = (Style)FindResource("NavButtonActive");
@@ -145,10 +183,34 @@ namespace NonGamingDirectUploader.Views
                     PageLabel.Text = "Visitation Uploader";
                     _vm.ActiveUploader = UploaderType.Visitation;
                     break;
+
+                // Gaming
+                case "Mass":
+                    PageHost.Content = _massPage;
+                    NavMass.Style = (Style)FindResource("NavButtonActive");
+                    DotMass.Visibility = Visibility.Visible;
+                    PageLabel.Text = "Mass Uploader";
+                    _vm.ActiveUploader = UploaderType.Mass;
+                    break;
+                case "VIP":
+                    PageHost.Content = _vipPage;
+                    NavVIP.Style = (Style)FindResource("NavButtonActive");
+                    DotVIP.Visibility = Visibility.Visible;
+                    PageLabel.Text = "VIP Uploader";
+                    _vm.ActiveUploader = UploaderType.VIP;
+                    break;
+                case "Junket":
+                    PageHost.Content = _junketPage;
+                    NavJunket.Style = (Style)FindResource("NavButtonActive");
+                    DotJunket.Visibility = Visibility.Visible;
+                    PageLabel.Text = "Junket Uploader";
+                    _vm.ActiveUploader = UploaderType.Junket;
+                    break;
             }
         }
 
         // ── Property radio ────────────────────────────────────────────────────
+        // Property (SEC/SN) applies across BOTH business lines at once.
         private void Property_Checked(object sender, RoutedEventArgs e)
         {
             var prop = RadioSEC.IsChecked == true ? PropertyType.SEC : PropertyType.SN;
@@ -156,6 +218,10 @@ namespace NonGamingDirectUploader.Views
             _vm.FnBVM.Property = prop;
             _vm.HotelVM.Property = prop;
             _vm.VisitationVM.Property = prop;
+
+            _vm.MassVM.Property = prop;
+            _vm.VIPVM.Property = prop;
+            _vm.JunketVM.Property = prop;
         }
 
         // ── Custom window chrome ──────────────────────────────────────────────

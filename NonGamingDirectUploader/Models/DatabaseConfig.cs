@@ -15,6 +15,7 @@ namespace NonGamingDirectUploader.Models
     {
         private static readonly Dictionary<(UploaderType Module, PropertyType Property), string> _map = new()
         {
+            // ── NonGaming ────────────────────────────────────────────────────
             { (UploaderType.Others,     PropertyType.SEC), @"C:\Users\marktubes\Documents\PROJECTS\DATABASE DUMMY\SEC\NonGaming.accdb" },
             { (UploaderType.Others,     PropertyType.SN),  @"C:\Users\marktubes\Documents\PROJECTS\DATABASE DUMMY\SN\NonGaming.accdb" },
 
@@ -26,6 +27,16 @@ namespace NonGamingDirectUploader.Models
 
             { (UploaderType.Visitation, PropertyType.SEC), @"C:\Users\marktubes\Documents\PROJECTS\DATABASE DUMMY\SEC\Statistics.accdb" },
             { (UploaderType.Visitation, PropertyType.SN),  @"C:\Users\marktubes\Documents\PROJECTS\DATABASE DUMMY\SN\Statistics.accdb" },
+
+            // ── Gaming — PLACEHOLDER PATHS, replace with your real Gaming .accdb ──
+            { (UploaderType.Mass,       PropertyType.SEC), @"C:\Users\marktubes\Documents\PROJECTS\DATABASE DUMMY\SEC\Mass.accdb" },
+            { (UploaderType.Mass,       PropertyType.SN),  @"C:\Users\marktubes\Documents\PROJECTS\DATABASE DUMMY\SN\Mass.accdb" },
+
+            { (UploaderType.VIP,        PropertyType.SEC), @"C:\Users\marktubes\Documents\PROJECTS\DATABASE DUMMY\SEC\VIP.accdb" },
+            { (UploaderType.VIP,        PropertyType.SN),  @"C:\Users\marktubes\Documents\PROJECTS\DATABASE DUMMY\SN\VIP.accdb" },
+
+            { (UploaderType.Junket,     PropertyType.SEC), @"C:\Users\marktubes\Documents\PROJECTS\DATABASE DUMMY\SEC\VIP.accdb" },
+            { (UploaderType.Junket,     PropertyType.SN),  @"C:\Users\marktubes\Documents\PROJECTS\DATABASE DUMMY\SN\VIP.accdb" },
         };
 
         /// <summary>Resolves the designated database path for a module/property pair.</summary>

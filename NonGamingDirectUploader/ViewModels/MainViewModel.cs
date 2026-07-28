@@ -1,6 +1,5 @@
 ﻿using NonGamingDirectUploader.Models;
 using NonGamingDirectUploader.ViewModels;
-using NonGamingDirectUploader.Models;
 
 namespace NonGamingDirectUploader.ViewModels
 {
@@ -13,9 +12,22 @@ namespace NonGamingDirectUploader.ViewModels
             set => Set(ref _activeUploader, value);
         }
 
+        private BusinessLine _activeBusinessLine = BusinessLine.NonGaming;
+        public BusinessLine ActiveBusinessLine
+        {
+            get => _activeBusinessLine;
+            set => Set(ref _activeBusinessLine, value);
+        }
+
+        // ── NonGaming ────────────────────────────────────────────────────────
         public OthersViewModel OthersVM { get; } = new();
         public FnBViewModel FnBVM { get; } = new();
         public HotelViewModel HotelVM { get; } = new();
         public VisitationViewModel VisitationVM { get; } = new();
+
+        // ── Gaming ───────────────────────────────────────────────────────────
+        public MassViewModel MassVM { get; } = new();
+        public VIPViewModel VIPVM { get; } = new();
+        public JunketViewModel JunketVM { get; } = new();
     }
 }

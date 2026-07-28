@@ -12,9 +12,10 @@ using System.Windows;
 namespace NonGamingDirectUploader.ViewModels
 {
     /// <summary>
-    /// Shared base for all four uploader panels.
-    /// Mirrors the VBA pattern: pick property → get/upload against the module's
-    /// pre-assigned database → edit/delete individual records in-place.
+    /// Shared base for every uploader panel — NonGaming (Others/F&amp;B/Hotel/
+    /// Visitation) and Gaming (Mass/VIP/Junket) alike. Mirrors the VBA
+    /// pattern: pick property → get/upload against the module's pre-assigned
+    /// database → edit/delete individual records in-place.
     /// </summary>
     public abstract class UploaderViewModel : BaseViewModel
     {
@@ -438,6 +439,9 @@ namespace NonGamingDirectUploader.ViewModels
             UploaderType.FnB => "Curr_FnB",
             UploaderType.Hotel => "Curr_Hotel",
             UploaderType.Visitation => "Curr_Visitation",
+            UploaderType.Mass => "Curr_Mass",
+            UploaderType.VIP => "Curr_VIP",
+            UploaderType.Junket => "Curr_Junket",
             _ => ""
         };
 
@@ -466,7 +470,7 @@ namespace NonGamingDirectUploader.ViewModels
         public void ClearLog() => LogLines.Clear();
     }
 
-    // ── Concrete ViewModels ───────────────────────────────────────────────────
+    // ── Concrete ViewModels — NonGaming ─────────────────────────────────────
     public class OthersViewModel : UploaderViewModel
     {
         public override UploaderType UploaderType => UploaderType.Others;
@@ -513,7 +517,7 @@ namespace NonGamingDirectUploader.ViewModels
             ("Description_Type", "Description Type", ColumnDataType.Text),
             ("Total_Revenue",    "Total Revenue",     ColumnDataType.Number),
             ("Comp_Revenue",     "Comp Revenue",      ColumnDataType.Number),
-            ("Occupied_Rooms",    "Occupied Room",     ColumnDataType.Number),
+            ("Occupied_Room",    "Occupied Room",     ColumnDataType.Number),
         };
     }
 
@@ -528,6 +532,58 @@ namespace NonGamingDirectUploader.ViewModels
             ("DTE",        "DTE",        ColumnDataType.Date),
             ("Visitation", "Visitation", ColumnDataType.Number),
             ("SRC",        "SRC",        ColumnDataType.Text),
+        };
+    }
+
+    // ── Concrete ViewModels — Gaming ────────────────────────────────────────
+    // PLACEHOLDER column sets below — edit these to match your real Mass/VIP/
+    // Junket Access table columns (field names, order, and data types).
+
+    public class MassViewModel : UploaderViewModel
+    {
+        public override UploaderType UploaderType => UploaderType.Mass;
+        public override string DisplayTitle => "Mass";
+        public override string AccentHex => "#FFE3B341";
+
+        public override (string Field, string Header, ColumnDataType Type)[] PreviewColumns => new[]
+        {
+            ("DTE",        "DTE",        ColumnDataType.Date),
+            ("Table_Type", "Table Type", ColumnDataType.Text),
+            ("Drop",       "Drop",       ColumnDataType.Number),
+            ("Win",        "Win",        ColumnDataType.Number),
+            ("Comp",       "Comp",       ColumnDataType.Number),
+        };
+    }
+
+    public class VIPViewModel : UploaderViewModel
+    {
+        public override UploaderType UploaderType => UploaderType.VIP;
+        public override string DisplayTitle => "VIP";
+        public override string AccentHex => "#FFDB61A2";
+
+        public override (string Field, string Header, ColumnDataType Type)[] PreviewColumns => new[]
+        {
+            ("DTE",        "DTE",        ColumnDataType.Date),
+            ("Table_Type", "Table Type", ColumnDataType.Text),
+            ("Rolling",    "Rolling",    ColumnDataType.Number),
+            ("Win",        "Win",        ColumnDataType.Number),
+            ("Comp",       "Comp",       ColumnDataType.Number),
+        };
+    }
+
+    public class JunketViewModel : UploaderViewModel
+    {
+        public override UploaderType UploaderType => UploaderType.Junket;
+        public override string DisplayTitle => "Junket";
+        public override string AccentHex => "#FF39C5CF";
+
+        public override (string Field, string Header, ColumnDataType Type)[] PreviewColumns => new[]
+        {
+            ("DTE",         "DTE",         ColumnDataType.Date),
+            ("Junket_Name", "Junket Name", ColumnDataType.Text),
+            ("Rolling",     "Rolling",     ColumnDataType.Number),
+            ("Win",         "Win",         ColumnDataType.Number),
+            ("Comp",        "Comp",        ColumnDataType.Number),
         };
     }
 }

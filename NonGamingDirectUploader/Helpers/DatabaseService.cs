@@ -20,10 +20,17 @@ namespace NonGamingDirectUploader.Helpers
         // ── TABLE NAME MAP ────────────────────────────────────────────────────
         private static string TableName(UploaderType type) => type switch
         {
+            // NonGaming
             UploaderType.Others => "Curr_Others",
             UploaderType.FnB => "Curr_FB",
             UploaderType.Hotel => "Curr_Hotel",
             UploaderType.Visitation => "Curr_Other_Stat",
+
+            // Gaming — PLACEHOLDER table names, replace with your real ones
+            UploaderType.Mass => "Curr_Mass",
+            UploaderType.VIP => "Curr_VIP",
+            UploaderType.Junket => "Curr_Junket",
+
             _ => throw new ArgumentOutOfRangeException(nameof(type))
         };
 

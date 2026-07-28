@@ -12,7 +12,7 @@
       registered" when running x86 means the 32-bit driver isn't installed on
       this machine — only the 64-bit Access Database Engine is present (common
       with 64-bit Office installs). The app's bitness must match whichever
-      ACE OLEDB driver is actually installed.
+      ACE OLEDB driver is actually installed.a
 
       If this ALSO throws "provider not registered" (or the earlier
       SEHException comes back), neither driver is installed at all — see the

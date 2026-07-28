@@ -45,12 +45,24 @@ namespace NonGamingDirectUploader.Models
         public double GrossRevenue { get; set; }
     }
 
+    /// <summary>
+    /// Every module handled by the app, across both business lines. Adding
+    /// Mass/VIP/Junket here — rather than a separate parallel type — lets
+    /// them reuse the same UploaderViewModel base, DatabaseService,
+    /// AutomationService, etc. as the NonGaming modules automatically.
+    /// </summary>
     public enum UploaderType
     {
+        // NonGaming
         Others,
         FnB,
         Hotel,
-        Visitation
+        Visitation,
+
+        // Gaming
+        Mass,
+        VIP,
+        Junket
     }
 
     public enum UploadMode
@@ -63,5 +75,24 @@ namespace NonGamingDirectUploader.Models
     {
         SEC,
         SN
+    }
+
+    /// <summary>Which top-level side of the app a module belongs to.</summary>
+    public enum BusinessLine
+    {
+        NonGaming,
+        Gaming
+    }
+
+    public static class UploaderTypeExtensions
+    {
+        public static BusinessLine GetBusinessLine(this UploaderType type) => type switch
+        {
+            UploaderType.Others or UploaderType.FnB or UploaderType.Hotel or UploaderType.Visitation
+                => BusinessLine.NonGaming,
+            UploaderType.Mass or UploaderType.VIP or UploaderType.Junket
+                => BusinessLine.Gaming,
+            _ => BusinessLine.NonGaming
+        };
     }
 }
