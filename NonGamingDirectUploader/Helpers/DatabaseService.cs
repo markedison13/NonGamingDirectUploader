@@ -70,6 +70,12 @@ namespace NonGamingDirectUploader.Helpers
         }
 
         // ── DELETE DAILY ──────────────────────────────────────────────────────
+        // NOTE: No longer used by the upload pipeline (UploaderViewModel now
+        // calls DeleteMatchingRowAsync, scoped to each upload row's logical
+        // key, instead of wiping every row for a date). Left in place in case
+        // it's needed elsewhere — a full manual "clear this whole day" tool,
+        // for example — but do not wire this back into ExecuteUploadAsync
+        // without re-introducing the whole-day overwrite bug.
         public static async Task DeleteDailyAsync(string dbPath, UploaderType type, DateTime date)
         {
             await Task.Run(() =>
@@ -91,6 +97,53 @@ namespace NonGamingDirectUploader.Helpers
                 cn.Open();
                 string sql = $"DELETE * FROM {TableName(type)} WHERE DTE Between #{start:MM/dd/yyyy}# And #{end:MM/dd/yyyy}#{SegmentFilterClause(type)}";
                 using var cmd = new OleDbCommand(sql, cn);
+                cmd.ExecuteNonQuery();
+            });
+        }
+
+        // ── DELETE MATCHING ROW (key-scoped, replaces whole-day delete) ─────
+        /// <summary>
+        /// Deletes only the existing row(s) whose values across
+        /// <paramref name="keyColumns"/> match <paramref name="uploadRow"/> —
+        /// NOT every row for that date. This is what makes uploading a single
+        /// record (or a partial file) safe: it replaces just the record(s)
+        /// that share the same logical key, leaving every other existing
+        /// record for that date untouched. Segment filter is still applied
+        /// for VIP/Junket so they never touch each other's rows.
+        /// </summary>
+        public static async Task DeleteMatchingRowAsync(string dbPath, UploaderType type, DataRow uploadRow, string[] keyColumns)
+        {
+            await Task.Run(() =>
+            {
+                using var cn = new OleDbConnection(BuildConnectionString(dbPath));
+                cn.Open();
+
+                var clauses = new List<string>();
+                var parameters = new List<OleDbParameter>();
+
+                foreach (var col in keyColumns)
+                {
+                    var value = uploadRow[col];
+
+                    if (string.Equals(col, "DTE", StringComparison.OrdinalIgnoreCase))
+                    {
+                        DateTime d = value is DateTime dt ? dt : DateTime.Parse(value?.ToString() ?? "");
+                        clauses.Add($"DTE = #{d:MM/dd/yyyy}#");
+                    }
+                    else if (value == null || value == DBNull.Value)
+                    {
+                        clauses.Add($"[{col}] IS NULL");
+                    }
+                    else
+                    {
+                        clauses.Add($"[{col}] = ?");
+                        parameters.Add(new OleDbParameter(col, value));
+                    }
+                }
+
+                string sql = $"DELETE * FROM {TableName(type)} WHERE {string.Join(" AND ", clauses)}{SegmentFilterClause(type)}";
+                using var cmd = new OleDbCommand(sql, cn);
+                cmd.Parameters.AddRange(parameters.ToArray());
                 cmd.ExecuteNonQuery();
             });
         }

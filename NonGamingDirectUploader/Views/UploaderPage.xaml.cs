@@ -163,10 +163,13 @@ namespace NonGamingDirectUploader.Views
 
         /// <summary>
         /// Bulk upload flow: create a per-table .xlsx template (a real Excel
-        /// workbook, opens in Excel via the default file association), let
-        /// the user paste data / save / close, read it back with
+        /// workbook, opens in Excel via the default file association),
+        /// PRE-FILLED with whatever is currently loaded in the Data Preview
+        /// grid (vm.PreviewData) instead of a blank sheet, let the user
+        /// review/edit / save / close, read it back with
         /// ExcelTemplateService, show it in a review window, then hand it to
-        /// the normal upload pipeline (which does the DTE overwrite check).
+        /// the normal upload pipeline (which does the key-scoped overwrite
+        /// check).
         /// </summary>
         private async void BulkUpload_Click(object sender, RoutedEventArgs e)
         {
@@ -175,7 +178,9 @@ namespace NonGamingDirectUploader.Views
             string templatePath;
             try
             {
-                templatePath = BulkTemplateService.CreateTemplate(_vm.UploaderType, _vm.PreviewColumns);
+                // Pass the grid's current data so the workbook opens already
+                // populated with what's on screen, instead of just headers.
+                templatePath = BulkTemplateService.CreateTemplate(_vm.UploaderType, _vm.PreviewColumns, _vm.PreviewData);
             }
             catch (Exception ex)
             {
@@ -195,11 +200,17 @@ namespace NonGamingDirectUploader.Views
                     _vm.DisplayTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
             }
 
+            var hasExistingRows = _vm.PreviewData != null && _vm.PreviewData.Rows.Count > 0;
             MessageBox.Show(
-                $"A blank {_vm.DisplayTitle} upload template has opened in Excel.\n\n" +
-                "1. Paste your data under the header row (do not change the header row).\n" +
-                "2. Save the file (Ctrl+S) and close Excel.\n" +
-                "3. Click OK below to load the data back into the app.",
+                hasExistingRows
+                    ? $"The {_vm.DisplayTitle} upload file has opened in Excel, pre-filled with the {_vm.PreviewData!.Rows.Count} record(s) currently shown in the Data Preview grid.\n\n" +
+                      "1. Review or edit the data as needed (do not change the header row).\n" +
+                      "2. Save the file (Ctrl+S) and close Excel.\n" +
+                      "3. Click OK below to load the data back into the app."
+                    : $"A blank {_vm.DisplayTitle} upload template has opened in Excel (no data was currently loaded in the grid).\n\n" +
+                      "1. Paste your data under the header row (do not change the header row).\n" +
+                      "2. Save the file (Ctrl+S) and close Excel.\n" +
+                      "3. Click OK below to load the data back into the app.",
                 _vm.DisplayTitle, MessageBoxButton.OK, MessageBoxImage.Information);
 
             DataTable dt;

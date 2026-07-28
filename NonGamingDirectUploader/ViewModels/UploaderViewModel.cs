@@ -227,20 +227,22 @@ namespace NonGamingDirectUploader.ViewModels
         }
 
         /// <summary>
-        /// Main upload flow, interactive. Checks the DTE column of the data
-        /// being uploaded and — for any distinct date already present in the
-        /// target table — prompts once to confirm overwrite before deleting
-        /// and re-inserting.
+        /// Main upload flow, interactive. For each row in the upload, deletes
+        /// only the existing record(s) that share the same logical key (see
+        /// UploadKeyConfig) — NOT every existing record for that date — then
+        /// inserts the uploaded rows. Prompts once to confirm before touching
+        /// any dates that already have data.
         /// </summary>
         public Task UploadAsync(DataTable uploadData)
             => ExecuteUploadAsync(uploadData, interactive: true);
 
         /// <summary>
-        /// Same upload pipeline as UploadAsync (DTE overwrite check, delete,
-        /// insert) but with no confirmation dialogs — any conflicting dates
-        /// are overwritten automatically. Used by unattended/automated imports
-        /// (the folder-watching automation) where no one is present to click
-        /// a prompt. Returns a summary instead of showing a "done" MessageBox.
+        /// Same upload pipeline as UploadAsync (key-scoped delete, then
+        /// insert) but with no confirmation dialogs — any conflicting
+        /// key-matched records are overwritten automatically. Used by
+        /// unattended/automated imports (the folder-watching automation)
+        /// where no one is present to click a prompt. Returns a summary
+        /// instead of showing a "done" MessageBox.
         /// </summary>
         public Task<(bool Success, string Message, int RowsUploaded)> UploadSilentAsync(DataTable uploadData)
             => ExecuteUploadAsync(uploadData, interactive: false);
@@ -302,9 +304,11 @@ namespace NonGamingDirectUploader.ViewModels
                     if (existingDates.Count > 0)
                     {
                         var dateList = string.Join(", ", existingDates.OrderBy(d => d).Select(d => d.ToString("MM/dd/yyyy")));
-                        prompt = $"{DisplayTitle} Uploader: data already exists for {existingDates.Count} date(s):\n{dateList}\n\n" +
-                                 "Do you want to overwrite the existing data for these dates?";
-                        caption = "Overwrite Existing Data";
+                        prompt = $"{DisplayTitle} Uploader: {existingDates.Count} date(s) in this upload already have data:\n{dateList}\n\n" +
+                                 "Only the specific record(s) matching this upload (same key fields — see UploadKeyConfig) " +
+                                 "will be replaced. Other existing records for these dates will be kept.\n\n" +
+                                 "Do you want to continue?";
+                        caption = "Overwrite Matching Data";
                         icon = MessageBoxImage.Warning;
                     }
                     else
@@ -325,18 +329,33 @@ namespace NonGamingDirectUploader.ViewModels
                 else if (existingDates.Count > 0)
                 {
                     var dateList = string.Join(", ", existingDates.OrderBy(d => d).Select(d => d.ToString("MM/dd/yyyy")));
-                    Log($"Automated import: overwriting existing data for {dateList}.");
+                    Log($"Automated import: replacing matching-key record(s) for {dateList}.");
                 }
 
-                if (existingDates.Count > 0)
+                // ── Key-scoped replace ───────────────────────────────────────
+                // Only delete the existing record(s) that share the same
+                // logical key as a row in this upload (see UploadKeyConfig).
+                // This is the fix for the "uploading one record wipes every
+                // record for that date" bug — the old code called
+                // DatabaseService.DeleteDailyAsync per distinct date here,
+                // which deleted every row for the date (scoped only by
+                // Segment for VIP/Junket). Do not revert to that.
+                SetStatus("Removing matching existing records…", "#FFFF8C00");
+                var keyColumns = UploadKeyConfig.GetKeyColumns(UploaderType);
+                var seenKeys = new HashSet<string>();
+                int matchesChecked = 0;
+
+                foreach (DataRow row in uploadData.Rows)
                 {
-                    SetStatus("Deleting existing records…", "#FFFF8C00");
-                    foreach (var d in existingDates)
-                    {
-                        await DatabaseService.DeleteDailyAsync(ResolvedDbPath, UploaderType, d);
-                        Log($"Deleted existing data for {d:MM/dd/yyyy}.");
-                    }
+                    var keyStr = string.Join("|", keyColumns.Select(k => row.Table.Columns.Contains(k) ? (row[k]?.ToString() ?? "") : ""));
+                    if (!seenKeys.Add(keyStr)) continue; // duplicate key within this same upload — only need to delete once
+
+                    await DatabaseService.DeleteMatchingRowAsync(ResolvedDbPath, UploaderType, row, keyColumns);
+                    matchesChecked++;
                 }
+
+                if (matchesChecked > 0)
+                    Log($"Checked {matchesChecked} distinct record key(s) in this upload (key: {string.Join("+", keyColumns)}); any matching existing record(s) were replaced.");
 
                 SetStatus("Uploading records…", "#FFFF8C00");
                 int uploaded = await DatabaseService.UploadRowsAsync(ResolvedDbPath, UploaderType, uploadData);
