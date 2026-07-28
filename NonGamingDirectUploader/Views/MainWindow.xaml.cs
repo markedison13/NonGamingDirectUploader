@@ -29,9 +29,29 @@ namespace NonGamingDirectUploader.Views
 
         public MainWindow()
         {
-            InitializeComponent();
+            try
+            {
+                InitializeComponent();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"MainWindow failed to load its XAML:\n\n{ex}",
+                    "Startup Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                throw;
+            }
+
             DataContext = _vm;
 
+            // Defer anything that touches named XAML elements until the
+            // window has actually finished loading its visual tree. This
+            // avoids "element was null right after InitializeComponent()"
+            // issues that can happen with heavier windows.
+            Loaded += MainWindow_Loaded;
+        }
+
+        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
             // Bind each page to its view model
             _othersPage.SetViewModel(_vm.OthersVM);
             _fnBPage.SetViewModel(_vm.FnBVM);
@@ -43,7 +63,23 @@ namespace NonGamingDirectUploader.Views
             _junketPage.SetViewModel(_vm.JunketVM);
 
             PageLabel.Text = "Others Uploader";
-            PageHost.Content = _othersPage;
+
+            // Defensive fallback: if the compiler-wired field is somehow
+            // still null, try resolving it from the live visual tree
+            // instead of crashing with a bare NullReferenceException.
+            var host = PageHost ?? (ContentControl)FindName("PageHost");
+            if (host == null)
+            {
+                MessageBox.Show(
+                    "PageHost could not be resolved from MainWindow.xaml.\n\n" +
+                    "This usually means the compiled XAML is out of sync with the source. " +
+                    "Try closing Visual Studio, deleting the bin/obj folders and the .vs folder, " +
+                    "then rebuilding.",
+                    "Startup Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            host.Content = _othersPage;
 
             // Warm up the OLE DB driver for every configured database (both
             // SEC and SN, across both business lines) right away, on app
@@ -102,6 +138,11 @@ namespace NonGamingDirectUploader.Views
         // ── Business line switch (NonGaming / Gaming) ────────────────────────
         private void BusinessLineCombo_Changed(object sender, SelectionChangedEventArgs e)
         {
+            // Same early-fire guard as SwitchTo — IsSelected="True" on the
+            // ComboBoxItem triggers this during XAML parsing, before the
+            // rest of the window (including PageHost) exists yet.
+            if (PageHost == null) return;
+
             if (BusinessLineCombo.SelectedItem is not ComboBoxItem item) return;
             var selected = item.Content?.ToString() == "Gaming" ? BusinessLine.Gaming : BusinessLine.NonGaming;
 
@@ -131,6 +172,15 @@ namespace NonGamingDirectUploader.Views
 
         private void SwitchTo(string tag)
         {
+            // Guard: BusinessLineCombo's ComboBoxItem has IsSelected="True" in
+            // XAML, which fires SelectionChanged -> SwitchTo DURING XAML
+            // parsing, before InitializeComponent() has finished wiring up
+            // every named element. PageHost is wired up last, so at that
+            // moment it's still null. Ignore any call that happens that
+            // early — the real initial page gets set in MainWindow_Loaded.
+            if (PageHost == null)
+                return;
+
             _activeTag = tag;
 
             // Reset all nav styles across BOTH panels

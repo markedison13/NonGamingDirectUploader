@@ -16,17 +16,35 @@ namespace NonGamingDirectUploader.Models
     {
         private static readonly Dictionary<(UploaderType Module, PropertyType Property), string> _map = new()
         {
-            { (UploaderType.Others, PropertyType.SEC), "U:\\FI-FP&A\\6. Users\\Angelo\\SAS\\ToUpload_SEC_OOD_VS.xlsx" },
-            { (UploaderType.Others, PropertyType.SN),  "U:\\FI-FP&A\\6. Users\\Angelo\\SAS\\ToUpload_SN_OOD_VS.xlsx" },
+            { (UploaderType.Others, PropertyType.SEC), "U:\\FI-FP&A\\6. Users\\Angelo\\SAS\\Upload Files\\Non-Gaming\\ToUpload_SEC_OOD_VS.xlsx" },
+            { (UploaderType.Others, PropertyType.SN),  "U:\\FI-FP&A\\6. Users\\Angelo\\SAS\\Upload Files\\Non-Gaming\\ToUpload_SQC_OOD_VS.xlsx" },
 
-            { (UploaderType.FnB,    PropertyType.SEC), "U:\\FI-FP&A\\6. Users\\Angelo\\SAS\\ToUpload_SEC_F&B_VS.xlsx" },
-            { (UploaderType.FnB,    PropertyType.SN),  "U:\\FI-FP&A\\6. Users\\Angelo\\SAS\\ToUpload_SN_F&B_VS.xlsx" },
+            { (UploaderType.FnB,    PropertyType.SEC), "U:\\FI-FP&A\\6. Users\\Angelo\\SAS\\Upload Files\\Non-Gaming\\ToUpload_SEC_F&B_VS.xlsx" },
+            { (UploaderType.FnB,    PropertyType.SN),  "U:\\FI-FP&A\\6. Users\\Angelo\\SAS\\Upload Files\\Non-Gaming\\ToUpload_SQC_F&B_VS.xlsx" },
 
-            { (UploaderType.Hotel,  PropertyType.SEC), "U:\\FI-FP&A\\6. Users\\Angelo\\SAS\\ToUpload_SEC_Hotel_VS.xlsx" },
-            { (UploaderType.Hotel,  PropertyType.SN),  "U:\\FI-FP&A\\6. Users\\Angelo\\SAS\\ToUpload_SN_Hotel_VS.xlsx" },
+            { (UploaderType.Hotel,  PropertyType.SEC), "U:\\FI-FP&A\\6. Users\\Angelo\\SAS\\Upload Files\\Non-Gaming\\ToUpload_SEC_Hotel_VS.xlsx" },
+            { (UploaderType.Hotel,  PropertyType.SN),  "U:\\FI-FP&A\\6. Users\\Angelo\\SAS\\Upload Files\\Non-Gaming\\ToUpload_SQC_Hotel_VS.xlsx" },
 
             // Visitation is intentionally not included — the automation
             // does not process the Visitation module.
+
+            
+            // ── Gaming ───────────────────────────────────────────────────────
+            // PLACEHOLDER PATHS below — edit to the real files. VIP and
+            // Junket are two SEPARATE source files even though they load
+            // into the same Curr_VIP table — each file's own Segment column
+            // values determine whether a row reads back as VIP ("Premium")
+            // or Junket (anything else) later.
+            { (UploaderType.Mass,   PropertyType.SEC), "U:\\FI-FP&A\\6. Users\\Angelo\\SAS\\Upload Files\\Gaming\\ToUpload_SEC_Mass.xlsx" },
+            { (UploaderType.Mass,   PropertyType.SN),  "U:\\FI-FP&A\\6. Users\\Angelo\\SAS\\Upload Files\\Gaming\\ToUpload_SQC_Mass_VS.xlsx" },
+
+            { (UploaderType.VIP,    PropertyType.SEC), "U:\\FI-FP&A\\6. Users\\Angelo\\SAS\\Upload Files\\Gaming\\ToUpload_SEC_Premium.xlsx" },
+            { (UploaderType.VIP,    PropertyType.SN),  "U:\\FI-FP&A\\6. Users\\Angelo\\SAS\\Upload Files\\Gaming\\ToUpload_SQC_Premium.xlsx" },
+
+            { (UploaderType.Junket, PropertyType.SEC), "U:\\FI-FP&A\\6. Users\\Angelo\\SAS\\Upload Files\\Gaming\\ToUpload_SEC_Junket.xlsx" },
+            { (UploaderType.Junket, PropertyType.SN),  "U:\\FI-FP&A\\6. Users\\Angelo\\SAS\\Upload Files\\Gaming\\ToUpload_SQC_Junket.xlsx" },
+
+
         };
 
         /// <summary>Resolves the configured file path for a module/property pair, if any.</summary>

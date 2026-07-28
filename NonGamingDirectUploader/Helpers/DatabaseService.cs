@@ -26,12 +26,32 @@ namespace NonGamingDirectUploader.Helpers
             UploaderType.Hotel => "Curr_Hotel",
             UploaderType.Visitation => "Curr_Other_Stat",
 
-            // Gaming — PLACEHOLDER table names, replace with your real ones
+            // Gaming
             UploaderType.Mass => "Curr_Mass",
+
+            // VIP and Junket share the SAME table (Curr_VIP) — they're told
+            // apart by the Segment column via SegmentFilterClause() below,
+            // not by separate tables.
             UploaderType.VIP => "Curr_VIP",
-            UploaderType.Junket => "Curr_Junket",
+            UploaderType.Junket => "Curr_VIP",
 
             _ => throw new ArgumentOutOfRangeException(nameof(type))
+        };
+
+        // ── SEGMENT FILTER (VIP vs Junket) ───────────────────────────────────
+        /// <summary>
+        /// VIP and Junket share the same underlying database (VIP.accdb —
+        /// see DatabaseConfig) and are told apart by the Segment column:
+        /// VIP records have Segment = 'Premium'; every other Segment value
+        /// belongs to Junket. Returns an extra " AND ..." clause to append
+        /// to any query for these two types, or "" for types that don't need
+        /// this distinction.
+        /// </summary>
+        private static string SegmentFilterClause(UploaderType type) => type switch
+        {
+            UploaderType.VIP => " AND Segment = 'Premium'",
+            UploaderType.Junket => " AND Segment <> 'Premium'",
+            _ => ""
         };
 
         // ── CHECK EXIST (Daily) ───────────────────────────────────────────────
@@ -42,7 +62,7 @@ namespace NonGamingDirectUploader.Helpers
             {
                 using var cn = new OleDbConnection(BuildConnectionString(dbPath));
                 cn.Open();
-                string sql = $"SELECT DTE FROM {TableName(type)} WHERE DTE = #{date:MM/dd/yyyy}#";
+                string sql = $"SELECT DTE FROM {TableName(type)} WHERE DTE = #{date:MM/dd/yyyy}#{SegmentFilterClause(type)}";
                 using var cmd = new OleDbCommand(sql, cn);
                 using var rdr = cmd.ExecuteReader();
                 return rdr != null && rdr.HasRows;
@@ -56,7 +76,7 @@ namespace NonGamingDirectUploader.Helpers
             {
                 using var cn = new OleDbConnection(BuildConnectionString(dbPath));
                 cn.Open();
-                string sql = $"DELETE * FROM {TableName(type)} WHERE DTE = #{date:MM/dd/yyyy}#";
+                string sql = $"DELETE * FROM {TableName(type)} WHERE DTE = #{date:MM/dd/yyyy}#{SegmentFilterClause(type)}";
                 using var cmd = new OleDbCommand(sql, cn);
                 cmd.ExecuteNonQuery();
             });
@@ -69,7 +89,7 @@ namespace NonGamingDirectUploader.Helpers
             {
                 using var cn = new OleDbConnection(BuildConnectionString(dbPath));
                 cn.Open();
-                string sql = $"DELETE * FROM {TableName(type)} WHERE DTE Between #{start:MM/dd/yyyy}# And #{end:MM/dd/yyyy}#";
+                string sql = $"DELETE * FROM {TableName(type)} WHERE DTE Between #{start:MM/dd/yyyy}# And #{end:MM/dd/yyyy}#{SegmentFilterClause(type)}";
                 using var cmd = new OleDbCommand(sql, cn);
                 cmd.ExecuteNonQuery();
             });
@@ -192,7 +212,7 @@ namespace NonGamingDirectUploader.Helpers
             {
                 using var cn = new OleDbConnection(BuildConnectionString(dbPath));
                 cn.Open();
-                string sql = $"SELECT * FROM {TableName(type)} WHERE DTE = #{date:MM/dd/yyyy}#";
+                string sql = $"SELECT * FROM {TableName(type)} WHERE DTE = #{date:MM/dd/yyyy}#{SegmentFilterClause(type)}";
                 using var adapter = new OleDbDataAdapter(sql, cn);
                 var dt = new DataTable();
                 adapter.Fill(dt);
@@ -207,7 +227,7 @@ namespace NonGamingDirectUploader.Helpers
             {
                 using var cn = new OleDbConnection(BuildConnectionString(dbPath));
                 cn.Open();
-                string sql = $"SELECT * FROM {TableName(type)} WHERE DTE Between #{start:MM/dd/yyyy}# And #{end:MM/dd/yyyy}# ORDER BY DTE ASC";
+                string sql = $"SELECT * FROM {TableName(type)} WHERE DTE Between #{start:MM/dd/yyyy}# And #{end:MM/dd/yyyy}#{SegmentFilterClause(type)} ORDER BY DTE ASC";
                 using var adapter = new OleDbDataAdapter(sql, cn);
                 var dt = new DataTable();
                 adapter.Fill(dt);

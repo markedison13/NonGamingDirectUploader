@@ -517,7 +517,7 @@ namespace NonGamingDirectUploader.ViewModels
             ("Description_Type", "Description Type", ColumnDataType.Text),
             ("Total_Revenue",    "Total Revenue",     ColumnDataType.Number),
             ("Comp_Revenue",     "Comp Revenue",      ColumnDataType.Number),
-            ("Occupied_Room",    "Occupied Room",     ColumnDataType.Number),
+            ("Occupied_Rooms",    "Occupied Room",     ColumnDataType.Number),
         };
     }
 
@@ -548,10 +548,18 @@ namespace NonGamingDirectUploader.ViewModels
         public override (string Field, string Header, ColumnDataType Type)[] PreviewColumns => new[]
         {
             ("DTE",        "DTE",        ColumnDataType.Date),
-            ("Table_Type", "Table Type", ColumnDataType.Text),
+            ("Pit",        "Pit",        ColumnDataType.Number),
+            ("PITID",      "PitID",      ColumnDataType.Text),
+            ("TABLE",      "Table",      ColumnDataType.Text),
+            ("GAME",       "Game",       ColumnDataType.Text),
+            ("Game_Name",  "Game Name",  ColumnDataType.Text),
+            ("Curr",       "Currency",   ColumnDataType.Text),
+            ("Revenue",    "Revenue",    ColumnDataType.Number),
             ("Drop",       "Drop",       ColumnDataType.Number),
-            ("Win",        "Win",        ColumnDataType.Number),
-            ("Comp",       "Comp",       ColumnDataType.Number),
+            ("Segment",    "Segment",    ColumnDataType.Text),
+            ("Limit",      "Limit",      ColumnDataType.Number),
+            ("Saved_by",   "Saved By",   ColumnDataType.Text),
+            ("Saved_Date", "Saved Date", ColumnDataType.Date),
         };
     }
 
@@ -563,11 +571,14 @@ namespace NonGamingDirectUploader.ViewModels
 
         public override (string Field, string Header, ColumnDataType Type)[] PreviewColumns => new[]
         {
-            ("DTE",        "DTE",        ColumnDataType.Date),
-            ("Table_Type", "Table Type", ColumnDataType.Text),
-            ("Rolling",    "Rolling",    ColumnDataType.Number),
-            ("Win",        "Win",        ColumnDataType.Number),
-            ("Comp",       "Comp",       ColumnDataType.Number),
+            ("DTE",             "DTE",              ColumnDataType.Date),
+            ("Segment",         "Segment",          ColumnDataType.Text),
+            ("VIP_Name",        "VIP Name",         ColumnDataType.Text),
+            ("Commission_Type", "Commission Type",  ColumnDataType.Text),
+            ("Curr",            "Currency",         ColumnDataType.Text),
+            ("Turnover",        "Turnover",         ColumnDataType.Number),
+            ("Revenue",         "Revenue",          ColumnDataType.Number),
+            ("Table_Count",     "Table Count",      ColumnDataType.Number),
         };
     }
 
@@ -579,11 +590,14 @@ namespace NonGamingDirectUploader.ViewModels
 
         public override (string Field, string Header, ColumnDataType Type)[] PreviewColumns => new[]
         {
-            ("DTE",         "DTE",         ColumnDataType.Date),
-            ("Junket_Name", "Junket Name", ColumnDataType.Text),
-            ("Rolling",     "Rolling",     ColumnDataType.Number),
-            ("Win",         "Win",         ColumnDataType.Number),
-            ("Comp",        "Comp",        ColumnDataType.Number),
+            ("DTE",             "DTE",              ColumnDataType.Date),
+            ("Segment",         "Segment",          ColumnDataType.Text),
+            ("VIP_Name",        "VIP Name",         ColumnDataType.Text),
+            ("Commission_Type", "Commission Type",  ColumnDataType.Text),
+            ("Curr",            "Currency",         ColumnDataType.Text),
+            ("Turnover",        "Turnover",         ColumnDataType.Number),
+            ("Revenue",         "Revenue",          ColumnDataType.Number),
+            ("Table_Count",     "Table Count",      ColumnDataType.Number),
         };
     }
 }

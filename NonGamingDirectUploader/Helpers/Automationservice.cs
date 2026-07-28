@@ -28,6 +28,13 @@ namespace NonGamingDirectUploader.Helpers
     /// Errors subfolder next to it, so the original is never touched — this
     /// matters since the same path is typically overwritten daily by another
     /// process (e.g. SAS).
+    ///
+    /// Gaming (Mass/VIP/Junket) is included here too. VIP and Junket write
+    /// into the SAME database table (Curr_VIP) but come from two SEPARATE
+    /// source files — the overwrite check (UploadSilentAsync -> DateExists /
+    /// DeleteDaily) is scoped by Segment ('Premium' = VIP, anything else =
+    /// Junket) inside DatabaseService, so importing the VIP file will never
+    /// delete that day's Junket rows, and vice versa.
     /// </summary>
     public static class AutomationService
     {
@@ -113,10 +120,17 @@ namespace NonGamingDirectUploader.Helpers
 
         private static UploaderViewModel CreateViewModel(UploaderType type) => type switch
         {
+            // NonGaming
             UploaderType.Others => new OthersViewModel(),
             UploaderType.FnB => new FnBViewModel(),
             UploaderType.Hotel => new HotelViewModel(),
             UploaderType.Visitation => new VisitationViewModel(),
+
+            // Gaming
+            UploaderType.Mass => new MassViewModel(),
+            UploaderType.VIP => new VIPViewModel(),
+            UploaderType.Junket => new JunketViewModel(),
+
             _ => throw new ArgumentOutOfRangeException(nameof(type))
         };
 
