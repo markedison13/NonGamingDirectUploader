@@ -297,7 +297,10 @@ namespace NonGamingDirectUploader.Views
         /// <summary>
         /// Builds the fixed, ordered set of columns for this uploader's Data
         /// Preview grid from vm.PreviewColumns, with the Actions column pinned
-        /// first (frozen) and DTE formatted as date-only.
+        /// first (frozen) and DTE formatted as date-only. Every column gets a
+        /// MinWidth so it can't get squeezed to an unreadable sliver when there
+        /// are many columns — the grid's horizontal scrollbar (Auto) will kick
+        /// in instead once the total width exceeds the panel.
         /// </summary>
         private void BuildPreviewColumns()
         {
@@ -309,6 +312,7 @@ namespace NonGamingDirectUploader.Views
                 Header = "Actions",
                 CellTemplate = (DataTemplate)FindResource("RowActionsTemplate"),
                 Width = new DataGridLength(140),
+                MinWidth = 140,
                 CanUserResize = false,
                 CanUserSort = false,
                 CanUserReorder = false
@@ -325,7 +329,8 @@ namespace NonGamingDirectUploader.Views
                 {
                     Header = header,
                     Binding = binding,
-                    Width = new DataGridLength(1, DataGridLengthUnitType.Star)
+                    Width = new DataGridLength(1, DataGridLengthUnitType.Star),
+                    MinWidth = 110
                 });
             }
         }

@@ -288,12 +288,16 @@
                         <!-- Columns are built manually in code-behind from the VM's
                              PreviewColumns list (fixed set, in order, DTE date-only).
                              AutoGenerateColumns is off. First column (Actions) is
-                             frozen so Edit/Delete stay visible while scrolling. -->
+                             frozen so Edit/Delete stay visible while scrolling.
+                             Vertical scrollbar is forced Visible (not Auto) so it's
+                             never mistaken for missing when there's more than a
+                             screenful of rows. -->
                         <DataGrid x:Name="PreviewGrid" Grid.Row="1"
                                   Visibility="Collapsed"
                                   AutoGenerateColumns="False"
                                   HorizontalScrollBarVisibility="Auto"
-                                  VerticalScrollBarVisibility="Auto"
+                                  VerticalScrollBarVisibility="Visible"
+                                  CanUserResizeColumns="True"
                                   FrozenColumnCount="1"
                                   Margin="0,0,0,0"/>
                     </Grid>
