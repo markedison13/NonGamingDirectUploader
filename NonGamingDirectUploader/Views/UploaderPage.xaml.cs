@@ -299,8 +299,19 @@ namespace NonGamingDirectUploader.Views
         /// Preview grid from vm.PreviewColumns, with the Actions column pinned
         /// first (frozen) and DTE formatted as date-only. Every column gets a
         /// MinWidth so it can't get squeezed to an unreadable sliver when there
-        /// are many columns — the grid's horizontal scrollbar (Auto) will kick
-        /// in instead once the total width exceeds the panel.
+        /// are many columns — the grid's horizontal scrollbar (Auto) kicks in
+        /// once the total column width exceeds the panel.
+        ///
+        /// FIX (horizontal scrollbar bug): column Width was previously
+        /// DataGridLength(1, DataGridLengthUnitType.Star). Star columns always
+        /// shrink/stretch to fill the available viewport width, so the grid's
+        /// content can never actually exceed the visible area — there was
+        /// nothing for the horizontal scrollbar to scroll to, even once the
+        /// ScrollViewer style bug (see DarkTheme.xaml) was fixed. Switched to
+        /// DataGridLengthUnitType.Auto so each column sizes to its own content/
+        /// header and keeps that width, letting the row's total width exceed
+        /// the panel for tables with many columns (e.g. Mass has 13) — that's
+        /// what makes the horizontal scrollbar appear and actually do something.
         /// </summary>
         private void BuildPreviewColumns()
         {
@@ -329,7 +340,7 @@ namespace NonGamingDirectUploader.Views
                 {
                     Header = header,
                     Binding = binding,
-                    Width = new DataGridLength(1, DataGridLengthUnitType.Star),
+                    Width = new DataGridLength(1, DataGridLengthUnitType.Auto),
                     MinWidth = 110
                 });
             }

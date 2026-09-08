@@ -33,13 +33,33 @@
     <SolidColorBrush x:Key="SidebarBrush"     Color="{StaticResource SidebarColor}"/>
     <SolidColorBrush x:Key="TransparentBrush" Color="Transparent"/>
 
-    <!-- ── SCROLLBAR ── -->
+    <!-- ── SCROLLBAR ──
+         FIX #2: the thumb previously had BOTH MinHeight="40" AND
+         MinWidth="40" set at once. For a VERTICAL scrollbar the track is
+         only ~8px wide (14px bar minus margins) — forcing MinWidth="40"
+         made the thumb try to be 40px wide inside an 8px-wide channel, so
+         most of it got clipped by the container and only a tiny sliver
+         remained visible. That sliver gets proportionally SHORTER (and so
+         more of it gets clipped away) the more rows are loaded — which is
+         exactly the "small dot with lots of data" symptom.
+
+         Fix: only constrain the minimum size along the actual scroll
+         axis — MinHeight for a vertical bar, MinWidth for a horizontal
+         one — never both at once. This is done via Orientation-based
+         triggers on the named thumb inside the ControlTemplate below,
+         instead of baking both into the shared Thumb style. Also gave the
+         track a background one shade lighter than the grid card
+         (BgElevatedBrush) so the whole channel is visible, not just the
+         thumb — otherwise, since the grid card and the old track color
+         were the same hex, the track blended invisibly into the
+         background and only the thumb showed, reinforcing the "floating
+         dot" look even once its size was fixed. -->
     <Style x:Key="ScrollBarThumbStyle" TargetType="Thumb">
-        <Setter Property="Background" Value="#FF484F58"/>
+        <Setter Property="Background" Value="#FF6E7681"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Thumb">
-                    <Border Background="{TemplateBinding Background}" CornerRadius="5"/>
+                    <Border Background="{TemplateBinding Background}" CornerRadius="7"/>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
@@ -47,34 +67,75 @@
             <Trigger Property="IsMouseOver" Value="True">
                 <Setter Property="Background" Value="{StaticResource AccentBlueBrush}"/>
             </Trigger>
+            <Trigger Property="IsDragging" Value="True">
+                <Setter Property="Background" Value="{StaticResource AccentBlueBrush}"/>
+            </Trigger>
         </Style.Triggers>
     </Style>
 
     <Style TargetType="ScrollBar">
-        <Setter Property="Background" Value="#FF0D1117"/>
-        <Setter Property="Width" Value="10"/>
+        <Setter Property="Background" Value="{StaticResource BgElevatedBrush}"/>
+        <Setter Property="Width" Value="14"/>
+        <Setter Property="MinWidth" Value="14"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ScrollBar">
-                    <Grid Background="{TemplateBinding Background}">
+                    <Border Background="{TemplateBinding Background}" CornerRadius="7">
                         <Track Name="PART_Track" IsDirectionReversed="True">
                             <Track.DecreaseRepeatButton>
-                                <RepeatButton Command="ScrollBar.LineUpCommand" Opacity="0" Height="0"/>
+                                <RepeatButton Command="ScrollBar.LineUpCommand" Opacity="0" Height="0" Width="0"/>
                             </Track.DecreaseRepeatButton>
                             <Track.Thumb>
-                                <Thumb Style="{StaticResource ScrollBarThumbStyle}" Margin="2,0"/>
+                                <Thumb x:Name="PART_ScrollThumb" Style="{StaticResource ScrollBarThumbStyle}" Margin="3"/>
                             </Track.Thumb>
                             <Track.IncreaseRepeatButton>
-                                <RepeatButton Command="ScrollBar.LineDownCommand" Opacity="0" Height="0"/>
+                                <RepeatButton Command="ScrollBar.LineDownCommand" Opacity="0" Height="0" Width="0"/>
                             </Track.IncreaseRepeatButton>
                         </Track>
-                    </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <!-- Minimum thumb LENGTH only, along the scroll axis — never
+                             both dimensions at once (see note above for why). This
+                             guarantees the thumb stays a visible ~40px pill even
+                             when there are hundreds of rows, instead of shrinking
+                             to a sliver proportional to row count. -->
+                        <Trigger Property="Orientation" Value="Vertical">
+                            <Setter TargetName="PART_ScrollThumb" Property="MinHeight" Value="60"/>
+                        </Trigger>
+                        <Trigger Property="Orientation" Value="Horizontal">
+                            <Setter TargetName="PART_ScrollThumb" Property="MinWidth" Value="60"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+        <Style.Triggers>
+            <Trigger Property="Orientation" Value="Horizontal">
+                <Setter Property="Width" Value="NaN"/>
+                <Setter Property="MinWidth" Value="0"/>
+                <Setter Property="Height" Value="14"/>
+                <Setter Property="MinHeight" Value="14"/>
+            </Trigger>
+        </Style.Triggers>
     </Style>
 
-    <Style TargetType="ScrollViewer">
+    <!--
+      FIX (horizontal scrollbar bug): this used to be an IMPLICIT style
+      (TargetType only, no x:Key). That silently applied to EVERY
+      ScrollViewer in the whole app — including the ScrollViewer baked
+      into DataGrid's own control template. That forced
+      HorizontalScrollBarVisibility="Disabled" onto every DataGrid too,
+      no matter what was set on the DataGrid element itself, which is why
+      the horizontal scrollbar never appeared on any preview grid.
+
+      Now it's keyed. Apply it explicitly with
+      Style="{StaticResource AppScrollViewerStyle}" only on the plain
+      layout ScrollViewers that actually want horizontal scrolling off
+      (e.g. the left config panel, the Edit Record dialog). DataGrid,
+      ComboBox popups, etc. now fall back to the normal WPF default and
+      respect whatever HorizontalScrollBarVisibility is set on them.
+    -->
+    <Style x:Key="AppScrollViewerStyle" TargetType="ScrollViewer">
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="HorizontalScrollBarVisibility" Value="Disabled"/>
         <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
@@ -361,6 +422,7 @@
         <Setter Property="EnableRowVirtualization" Value="True"/>
         <Setter Property="EnableColumnVirtualization" Value="True"/>
         <Setter Property="RowHeaderWidth" Value="0"/>
+        <Setter Property="ScrollViewer.CanContentScroll" Value="True"/>
     </Style>
 
     <Style TargetType="DataGridColumnHeader">

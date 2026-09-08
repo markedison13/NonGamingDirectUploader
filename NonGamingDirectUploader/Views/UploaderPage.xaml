@@ -98,7 +98,16 @@
                     Background="{StaticResource BgSurfaceBrush}"
                     BorderBrush="{StaticResource BorderBrush}"
                     BorderThickness="0,0,1,0">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <!--
+                    FIX: this ScrollViewer previously relied on the app's
+                    implicit ScrollViewer style, which was ALSO leaking into
+                    DataGrid's internal scroll viewer and forcing its
+                    horizontal scrollbar off everywhere. That implicit style
+                    is now keyed (AppScrollViewerStyle) in DarkTheme.xaml, so
+                    it must be applied explicitly here to keep this panel's
+                    original "vertical scroll only" behavior.
+                -->
+                <ScrollViewer Style="{StaticResource AppScrollViewerStyle}">
                     <StackPanel Margin="24,20,24,20" >
 
                         <!-- DATABASE SECTION (auto-assigned per module + property, no manual selection) -->
@@ -291,7 +300,9 @@
                              frozen so Edit/Delete stay visible while scrolling.
                              Vertical scrollbar is forced Visible (not Auto) so it's
                              never mistaken for missing when there's more than a
-                             screenful of rows. -->
+                             screenful of rows. Horizontal scrollbar is Auto — it
+                             now actually appears once column widths (Auto-sized in
+                             code-behind) exceed the panel's width. -->
                         <DataGrid x:Name="PreviewGrid" Grid.Row="1"
                                   Visibility="Collapsed"
                                   AutoGenerateColumns="False"

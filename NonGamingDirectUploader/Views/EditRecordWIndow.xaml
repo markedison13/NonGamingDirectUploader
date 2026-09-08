@@ -18,7 +18,15 @@
         <TextBlock Grid.Row="0" Text="Edit Record" FontSize="16" FontWeight="Bold"
                    Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,14"/>
 
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+        <!--
+            FIX: this ScrollViewer previously relied on the app's implicit
+            ScrollViewer style, which was ALSO leaking into DataGrid's
+            internal scroll viewer and forcing its horizontal scrollbar off
+            everywhere. That implicit style is now keyed (AppScrollViewerStyle)
+            in DarkTheme.xaml, so it must be applied explicitly here to keep
+            this dialog's original "vertical scroll only" behavior.
+        -->
+        <ScrollViewer Grid.Row="1" Style="{StaticResource AppScrollViewerStyle}">
             <StackPanel x:Name="FieldsPanel"/>
         </ScrollViewer>
 
