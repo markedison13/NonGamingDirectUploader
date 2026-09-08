@@ -419,10 +419,36 @@
         <Setter Property="IsReadOnly" Value="True"/>
         <Setter Property="HorizontalScrollBarVisibility" Value="Auto"/>
         <Setter Property="VerticalScrollBarVisibility" Value="Visible"/>
-        <Setter Property="EnableRowVirtualization" Value="True"/>
-        <Setter Property="EnableColumnVirtualization" Value="True"/>
         <Setter Property="RowHeaderWidth" Value="0"/>
-        <Setter Property="ScrollViewer.CanContentScroll" Value="True"/>
+        <!--
+          FIX (vertical scrollbar not rendering above ~100 rows), attempt 2:
+          the first attempt kept row virtualization ON and just set
+          CanContentScroll="False" to force pixel-based scrolling. That DID
+          make the scrollbar itself render/size correctly, but it broke cell
+          rendering — with virtualization still on, DataGrid's internal
+          VirtualizingStackPanel (DataGridRowsPresenter) expects to drive
+          scrolling itself via IScrollInfo when CanContentScroll="True".
+          Forcing CanContentScroll="False" while virtualization stays on
+          bypasses that IScrollInfo panel with a plain ScrollContentPresenter,
+          which left rows measuring to zero content — hence the blank grid
+          (no header text, no cell text) even though 210+ records were
+          loaded.
+
+          Fix: disable row/column virtualization entirely instead. With a
+          few thousand rows this has no noticeable performance impact, and
+          it guarantees every row/cell is fully realized (so text actually
+          renders) while also giving the vertical ScrollBar a normal,
+          correctly-sized Extent/Viewport based on real content height —
+          no more relying on CanContentScroll tricks or virtualization edge
+          cases. Column virtualization is also off since the Auto-width
+          preview columns (see UploaderPage.xaml.cs BuildPreviewColumns)
+          already require full column measurement and effectively disable
+          it anyway.
+        -->
+        <Setter Property="EnableRowVirtualization" Value="False"/>
+        <Setter Property="EnableColumnVirtualization" Value="False"/>
+        <Setter Property="ScrollViewer.CanContentScroll" Value="False"/>
+        <Setter Property="VirtualizingPanel.ScrollUnit" Value="Pixel"/>
     </Style>
 
     <Style TargetType="DataGridColumnHeader">

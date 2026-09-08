@@ -360,6 +360,16 @@ namespace NonGamingDirectUploader.Views
                 PreviewGrid.Visibility = Visibility.Visible;
                 EmptyState.Visibility = Visibility.Collapsed;
                 PreviewGrid.ItemsSource = dt.DefaultView;
+
+                // FIX (vertical scrollbar not rendering above ~100 rows):
+                // force an immediate layout pass right after a big
+                // ItemsSource swap so the DataGrid's internal ScrollViewer
+                // recomputes its Extent/Viewport/ScrollBar against the new
+                // row count right away, instead of picking it up lazily
+                // (which was leaving the vertical scrollbar un-rendered at
+                // high row counts). See DarkTheme.xaml for the companion
+                // fix (pixel-based scrolling instead of item-based).
+                PreviewGrid.UpdateLayout();
             }
         }
 
