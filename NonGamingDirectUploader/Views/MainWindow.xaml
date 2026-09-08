@@ -283,7 +283,7 @@
                                        Foreground="{StaticResource TextMutedBrush}"/>
                             <TextBlock Text="v2.0 — WPF Edition" FontSize="10"
                                        Foreground="{StaticResource TextMutedBrush}" Margin="0,2,0,0"/>
-                            <TextBlock Text="Daily import runs via Task Scheduler at 5:00 AM" FontSize="9"
+                            <TextBlock Text="'Run Automation Now' only imports the currently active tab (NonGaming or Gaming). Scheduled runs use separate NonGaming/Gaming tasks." FontSize="9"
                                        Foreground="{StaticResource TextMutedBrush}" Margin="0,6,0,0"
                                        TextWrapping="Wrap"/>
                         </StackPanel>

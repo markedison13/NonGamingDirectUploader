@@ -38,6 +38,9 @@ namespace NonGamingDirectUploader.Views
                 "F&B" => "Curr_FnB",
                 "Hotel" => "Curr_Hotel",
                 "Visitation" => "Curr_Visitation",
+                "Mass" => "Cur_Mass",
+                "VIP" => "Curr_VIP",
+                "Junket" => "Curr_VIP",
                 _ => "?"
             }}";
 

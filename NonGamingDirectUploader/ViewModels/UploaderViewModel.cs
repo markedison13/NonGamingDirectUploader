@@ -274,6 +274,43 @@ namespace NonGamingDirectUploader.ViewModels
                 return (false, msg, 0);
             }
 
+            // ── De-duplicate rows WITHIN this upload batch by logical key ──────
+            // Bug fix: previously, the key-scoped delete below only deleted the
+            // existing matching record ONCE per key (via a seenKeys check), but
+            // every row of uploadData — including duplicates of the SAME key —
+            // still got inserted afterward. So uploading a file with the same
+            // record twice (e.g. same DTE/VIP_Name/Commission_Type/Curr for VIP)
+            // deleted the 1 existing row but then inserted 2 rows back, silently
+            // creating a duplicate instead of just replacing the existing record.
+            //
+            // Fix: collapse the upload batch to one row per logical key BEFORE
+            // doing anything else. If the same key appears more than once, only
+            // the LAST occurrence in the file is kept (matches "last value wins"
+            // expectations for a spreadsheet edit), and the rest are logged as
+            // skipped duplicates.
+            var keyColumns = UploadKeyConfig.GetKeyColumns(UploaderType);
+            var dedupedData = uploadData.Clone();
+            var lastRowForKey = new Dictionary<string, DataRow>();
+            int duplicateRowsInBatch = 0;
+
+            foreach (DataRow row in uploadData.Rows)
+            {
+                var keyStr = string.Join("|", keyColumns.Select(k => row.Table.Columns.Contains(k) ? (row[k]?.ToString() ?? "") : ""));
+                if (lastRowForKey.ContainsKey(keyStr))
+                    duplicateRowsInBatch++;
+                lastRowForKey[keyStr] = row; // last occurrence for this key wins
+            }
+            foreach (var row in lastRowForKey.Values)
+                dedupedData.ImportRow(row);
+
+            if (duplicateRowsInBatch > 0)
+            {
+                Log($"⚠ {duplicateRowsInBatch} duplicate row(s) within this upload shared the same key " +
+                    $"({string.Join("+", keyColumns)}) — only the last occurrence of each was kept, the rest were skipped.");
+            }
+
+            uploadData = dedupedData; // everything below now operates on the deduped set
+
             var dates = ExtractDistinctDates(uploadData);
             if (dates.Count == 0)
             {
@@ -306,15 +343,21 @@ namespace NonGamingDirectUploader.ViewModels
                         var dateList = string.Join(", ", existingDates.OrderBy(d => d).Select(d => d.ToString("MM/dd/yyyy")));
                         prompt = $"{DisplayTitle} Uploader: {existingDates.Count} date(s) in this upload already have data:\n{dateList}\n\n" +
                                  "Only the specific record(s) matching this upload (same key fields — see UploadKeyConfig) " +
-                                 "will be replaced. Other existing records for these dates will be kept.\n\n" +
-                                 "Do you want to continue?";
+                                 "will be replaced. Other existing records for these dates will be kept." +
+                                 (duplicateRowsInBatch > 0
+                                     ? $"\n\nNote: {duplicateRowsInBatch} duplicate row(s) within this file were detected and collapsed — see the log after upload."
+                                     : "") +
+                                 "\n\nDo you want to continue?";
                         caption = "Overwrite Matching Data";
                         icon = MessageBoxImage.Warning;
                     }
                     else
                     {
                         var dateList = string.Join(", ", dates.OrderBy(d => d).Select(d => d.ToString("MM/dd/yyyy")));
-                        prompt = $"{DisplayTitle} Uploader: are you sure you want to upload data for {dateList}?";
+                        prompt = $"{DisplayTitle} Uploader: are you sure you want to upload data for {dateList}?" +
+                                 (duplicateRowsInBatch > 0
+                                     ? $"\n\nNote: {duplicateRowsInBatch} duplicate row(s) within this file were detected and collapsed — see the log after upload."
+                                     : "");
                         caption = "Upload";
                         icon = MessageBoxImage.Question;
                     }
@@ -333,23 +376,19 @@ namespace NonGamingDirectUploader.ViewModels
                 }
 
                 // ── Key-scoped replace ───────────────────────────────────────
-                // Only delete the existing record(s) that share the same
-                // logical key as a row in this upload (see UploadKeyConfig).
-                // This is the fix for the "uploading one record wipes every
-                // record for that date" bug — the old code called
-                // DatabaseService.DeleteDailyAsync per distinct date here,
-                // which deleted every row for the date (scoped only by
-                // Segment for VIP/Junket). Do not revert to that.
+                // uploadData is already deduped to one row per logical key (see
+                // above), so this loop deletes at most one existing matching
+                // record per row — no separate seenKeys check needed anymore.
+                // This is what makes uploading a single record (or a partial
+                // file) safe: it replaces just the record(s) that share the
+                // same logical key, leaving every other existing record for
+                // that date untouched. Segment filter is still applied for
+                // VIP/Junket so they never touch each other's rows.
                 SetStatus("Removing matching existing records…", "#FFFF8C00");
-                var keyColumns = UploadKeyConfig.GetKeyColumns(UploaderType);
-                var seenKeys = new HashSet<string>();
                 int matchesChecked = 0;
 
                 foreach (DataRow row in uploadData.Rows)
                 {
-                    var keyStr = string.Join("|", keyColumns.Select(k => row.Table.Columns.Contains(k) ? (row[k]?.ToString() ?? "") : ""));
-                    if (!seenKeys.Add(keyStr)) continue; // duplicate key within this same upload — only need to delete once
-
                     await DatabaseService.DeleteMatchingRowAsync(ResolvedDbPath, UploaderType, row, keyColumns);
                     matchesChecked++;
                 }
@@ -362,7 +401,9 @@ namespace NonGamingDirectUploader.ViewModels
                 Progress = 100;
                 TotalRows = uploaded;
                 Log($"✓ Upload complete — {uploaded} row(s) inserted.");
-                var successMsg = $"{uploaded} record(s) uploaded.";
+                var successMsg = duplicateRowsInBatch > 0
+                    ? $"{uploaded} record(s) uploaded ({duplicateRowsInBatch} duplicate row(s) in the file were skipped)."
+                    : $"{uploaded} record(s) uploaded.";
                 SetStatus($"✓ Done! {successMsg}", "#FF3FB950");
                 if (interactive)
                     MessageBox.Show("Done uploading the file.", DisplayTitle, MessageBoxButton.OK, MessageBoxImage.Information);

@@ -35,12 +35,12 @@ namespace NonGamingDirectUploader.Models
             // into the same Curr_VIP table — each file's own Segment column
             // values determine whether a row reads back as VIP ("Premium")
             // or Junket (anything else) later.
-            { (UploaderType.Mass,   PropertyType.SEC), "U:\\FI-FP&A\\6. Users\\Angelo\\SAS\\Upload Files\\Gaming\\ToUpload_SEC_Mass.xlsx" },
+            { (UploaderType.Mass,   PropertyType.SEC), "U:\\FI-FP&A\\6. Users\\Angelo\\SAS\\Upload Files\\Gaming\\ToUpload_SEC_Mass_VS.xlsx" },
             { (UploaderType.Mass,   PropertyType.SN),  "U:\\FI-FP&A\\6. Users\\Angelo\\SAS\\Upload Files\\Gaming\\ToUpload_SQC_Mass_VS.xlsx" },
 
             { (UploaderType.VIP,    PropertyType.SEC), "U:\\FI-FP&A\\6. Users\\Angelo\\SAS\\Upload Files\\Gaming\\ToUpload_SEC_Premium.xlsx" },
             { (UploaderType.VIP,    PropertyType.SN),  "U:\\FI-FP&A\\6. Users\\Angelo\\SAS\\Upload Files\\Gaming\\ToUpload_SQC_Premium.xlsx" },
-
+            
             { (UploaderType.Junket, PropertyType.SEC), "U:\\FI-FP&A\\6. Users\\Angelo\\SAS\\Upload Files\\Gaming\\ToUpload_SEC_Junket.xlsx" },
             { (UploaderType.Junket, PropertyType.SN),  "U:\\FI-FP&A\\6. Users\\Angelo\\SAS\\Upload Files\\Gaming\\ToUpload_SQC_Junket.xlsx" },
 

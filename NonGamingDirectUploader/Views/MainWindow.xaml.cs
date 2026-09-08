@@ -112,6 +112,12 @@ namespace NonGamingDirectUploader.Views
         }
 
         // ── Automation ────────────────────────────────────────────────────────
+        // Scoped to whichever business line (NonGaming/Gaming) is currently
+        // active in the UI, via _activeLine — set in
+        // BusinessLineCombo_Changed below. Previously this always ran
+        // AutomationService.RunImportAsync() with no filter, which imported
+        // NonGaming AND Gaming files together regardless of which tab you
+        // were on.
         private async void RunAutomation_Click(object sender, RoutedEventArgs e)
         {
             var btn = (Button)sender;
@@ -119,9 +125,9 @@ namespace NonGamingDirectUploader.Views
             btn.Content = "⟳  Running…";
             try
             {
-                var log = await AutomationService.RunImportAsync();
+                var log = await AutomationService.RunImportAsync(_activeLine);
                 var summary = string.Join(Environment.NewLine, log);
-                MessageBox.Show(summary, "Automation Run Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(summary, $"Automation Run Complete ({_activeLine})", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {

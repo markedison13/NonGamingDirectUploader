@@ -38,13 +38,26 @@ namespace NonGamingDirectUploader.Helpers
     /// </summary>
     public static class AutomationService
     {
-        /// <summary>Runs one full import pass across every configured module/property file.</summary>
-        public static async Task<List<string>> RunImportAsync()
+        /// <summary>
+        /// Runs one full import pass across every configured module/property
+        /// file. If <paramref name="businessLineFilter"/> is null, BOTH
+        /// NonGaming and Gaming modules are processed (original behavior —
+        /// kept for the legacy "--auto-upload" launch arg). Pass
+        /// BusinessLine.NonGaming or BusinessLine.Gaming to run only that
+        /// side — this is what lets NonGaming and Gaming be scheduled/run as
+        /// two fully independent automation passes.
+        /// </summary>
+        public static async Task<List<string>> RunImportAsync(BusinessLine? businessLineFilter = null)
         {
-            var log = new List<string> { $"=== Automation run started {DateTime.Now:yyyy-MM-dd HH:mm:ss} ===" };
+            var scopeLabel = businessLineFilter?.ToString() ?? "All";
+            var log = new List<string> { $"=== Automation run started {DateTime.Now:yyyy-MM-dd HH:mm:ss} ({scopeLabel}) ===" };
 
             foreach (UploaderType type in Enum.GetValues(typeof(UploaderType)))
             {
+                // Skip modules outside the requested business line, if a filter was given.
+                if (businessLineFilter.HasValue && type.GetBusinessLine() != businessLineFilter.Value)
+                    continue;
+
                 foreach (PropertyType prop in Enum.GetValues(typeof(PropertyType)))
                 {
                     if (!AutomationConfig.TryGetFilePath(type, prop, out var filePath) || string.IsNullOrWhiteSpace(filePath))

@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 using NonGamingDirectUploader.Helpers;
+using NonGamingDirectUploader.Models;
 using NonGamingDirectUploader.Views;
 
 namespace NonGamingDirectUploader
@@ -22,10 +23,34 @@ namespace NonGamingDirectUploader
             AppDomain.CurrentDomain.UnhandledException += App_DomainUnhandledException;
             TaskScheduler.UnobservedTaskException += App_UnobservedTaskException;
 
-            // Headless mode — launched by Windows Task Scheduler as:
-            //   NonGamingDirectUploader.exe --auto-upload
+            // Headless mode — launched by Windows Task Scheduler. Three
+            // possible args, so NonGaming and Gaming can run as two fully
+            // independent scheduled tasks (different times, independent
+            // success/failure) instead of always running together:
+            //
+            //   NonGamingDirectUploader.exe --auto-upload-nongaming
+            //   NonGamingDirectUploader.exe --auto-upload-gaming
+            //   NonGamingDirectUploader.exe --auto-upload            (legacy: runs BOTH)
+            //
             // Runs the folder import once, with no window shown, then exits.
-            // This is the trigger for the daily 5:00 AM automated import.
+            if (Array.Exists(e.Args, a => string.Equals(a, "--auto-upload-nongaming", StringComparison.OrdinalIgnoreCase)))
+            {
+                await AutomationService.RunImportAsync(BusinessLine.NonGaming);
+                Shutdown();
+                return;
+            }
+
+            if (Array.Exists(e.Args, a => string.Equals(a, "--auto-upload-gaming", StringComparison.OrdinalIgnoreCase)))
+            {
+                await AutomationService.RunImportAsync(BusinessLine.Gaming);
+                Shutdown();
+                return;
+            }
+
+            // Legacy arg — kept for backward compatibility with any existing
+            // scheduled task. Runs BOTH business lines in one pass, same as
+            // the original behavior. Prefer the two scoped args above for
+            // new Task Scheduler setups.
             if (Array.Exists(e.Args, a => string.Equals(a, "--auto-upload", StringComparison.OrdinalIgnoreCase)))
             {
                 await AutomationService.RunImportAsync();

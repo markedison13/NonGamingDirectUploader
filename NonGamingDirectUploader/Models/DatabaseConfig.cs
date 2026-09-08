@@ -16,27 +16,27 @@ namespace NonGamingDirectUploader.Models
         private static readonly Dictionary<(UploaderType Module, PropertyType Property), string> _map = new()
         {
             // ── NonGaming ────────────────────────────────────────────────────
-            { (UploaderType.Others,     PropertyType.SEC), @"C:\Users\marktubes\Documents\PROJECTS\DATABASE DUMMY\SEC\NonGaming.accdb" },
-            { (UploaderType.Others,     PropertyType.SN),  @"C:\Users\marktubes\Documents\PROJECTS\DATABASE DUMMY\SN\NonGaming.accdb" },
+            { (UploaderType.Others,     PropertyType.SEC), @"U:\FI-FP&A\6. Users\Mark\DATABASE DUMMY\SEC\NonGaming.accdb" },
+            { (UploaderType.Others,     PropertyType.SN),  @"U:\FI-FP&A\6. Users\Mark\DATABASE DUMMY\SN\NonGaming.accdb" },
 
-            { (UploaderType.FnB,        PropertyType.SEC), @"C:\Users\marktubes\Documents\PROJECTS\DATABASE DUMMY\SEC\NonGaming.accdb" },
-            { (UploaderType.FnB,        PropertyType.SN),  @"C:\Users\marktubes\Documents\PROJECTS\DATABASE DUMMY\SN\NonGaming.accdb" },
+            { (UploaderType.FnB,        PropertyType.SEC), @"U:\FI-FP&A\6. Users\Mark\DATABASE DUMMY\SEC\NonGaming.accdb" },
+            { (UploaderType.FnB,        PropertyType.SN),  @"U:\FI-FP&A\6. Users\Mark\DATABASE DUMMY\SN\NonGaming.accdb" },
 
-            { (UploaderType.Hotel,      PropertyType.SEC), @"C:\Users\marktubes\Documents\PROJECTS\DATABASE DUMMY\SEC\NonGaming.accdb" },
-            { (UploaderType.Hotel,      PropertyType.SN),  @"C:\Users\marktubes\Documents\PROJECTS\DATABASE DUMMY\SN\NonGaming.accdb" },
+            { (UploaderType.Hotel,      PropertyType.SEC), @"U:\FI-FP&A\6. Users\Mark\DATABASE DUMMY\SEC\NonGaming.accdb" },
+            { (UploaderType.Hotel,      PropertyType.SN),  @"U:\FI-FP&A\6. Users\Mark\DATABASE DUMMY\SN\NonGaming.accdb" },
 
-            { (UploaderType.Visitation, PropertyType.SEC), @"C:\Users\marktubes\Documents\PROJECTS\DATABASE DUMMY\SEC\Statistics.accdb" },
-            { (UploaderType.Visitation, PropertyType.SN),  @"C:\Users\marktubes\Documents\PROJECTS\DATABASE DUMMY\SN\Statistics.accdb" },
+            { (UploaderType.Visitation, PropertyType.SEC), @"U:\FI-FP&A\6. Users\Mark\DATABASE DUMMY\SEC\Statistics.accdb" },
+            { (UploaderType.Visitation, PropertyType.SN),  @"U:\FI-FP&A\6. Users\Mark\DATABASE DUMMY\SN\Statistics.accdb" },
 
             // ── Gaming — PLACEHOLDER PATHS, replace with your real Gaming .accdb ──
-            { (UploaderType.Mass,       PropertyType.SEC), @"C:\Users\marktubes\Documents\PROJECTS\DATABASE DUMMY\SEC\Mass.accdb" },
-            { (UploaderType.Mass,       PropertyType.SN),  @"C:\Users\marktubes\Documents\PROJECTS\DATABASE DUMMY\SN\Mass.accdb" },
+            { (UploaderType.Mass,       PropertyType.SEC), @"U:\FI-FP&A\6. Users\Mark\DATABASE DUMMY\SEC\Mass.accdb" },
+            { (UploaderType.Mass,       PropertyType.SN),  @"U:\FI-FP&A\6. Users\Mark\DATABASE DUMMY\SN\Mass.accdb" },
 
-            { (UploaderType.VIP,        PropertyType.SEC), @"C:\Users\marktubes\Documents\PROJECTS\DATABASE DUMMY\SEC\VIP.accdb" },
-            { (UploaderType.VIP,        PropertyType.SN),  @"C:\Users\marktubes\Documents\PROJECTS\DATABASE DUMMY\SN\VIP.accdb" },
+            { (UploaderType.VIP,        PropertyType.SEC), @"U:\FI-FP&A\6. Users\Mark\DATABASE DUMMY\SEC\VIP.accdb" },
+            { (UploaderType.VIP,        PropertyType.SN),  @"U:\FI-FP&A\6. Users\Mark\DATABASE DUMMY\SN\VIP.accdb" },
 
-            { (UploaderType.Junket,     PropertyType.SEC), @"C:\Users\marktubes\Documents\PROJECTS\DATABASE DUMMY\SEC\VIP.accdb" },
-            { (UploaderType.Junket,     PropertyType.SN),  @"C:\Users\marktubes\Documents\PROJECTS\DATABASE DUMMY\SN\VIP.accdb" },
+            { (UploaderType.Junket,     PropertyType.SEC), @"U:\FI-FP&A\6. Users\Mark\DATABASE DUMMY\SEC\VIP.accdb" },
+            { (UploaderType.Junket,     PropertyType.SN),  @"U:\FI-FP&A\6. Users\Mark\DATABASE DUMMY\SN\VIP.accdb" },
         };
 
         /// <summary>Resolves the designated database path for a module/property pair.</summary>
