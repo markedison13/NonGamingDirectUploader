@@ -57,6 +57,13 @@ namespace NonGamingDirectUploader.Views
             // Fixed set of preview columns for this table (DTE, etc.)
             BuildPreviewColumns();
 
+            // FIX: hide "⬆ Upload to Database" for modules that don't support
+            // uploading from this page (currently the three Online Gaming
+            // modules — VirtualGames/SportsBook/FUNaloMAX — which are being
+            // migrated to a single combined upload panel). "Get Data from
+            // Database" and everything else on the page is left untouched.
+            UploadBtn.Visibility = vm.SupportsUpload ? Visibility.Visible : Visibility.Collapsed;
+
             // VM property-change → UI refresh
             vm.PropertyChanged += (s, e) =>
             {
@@ -173,10 +180,24 @@ namespace NonGamingDirectUploader.Views
         /// ExcelTemplateService, show it in a review window, then hand it to
         /// the normal upload pipeline (which does the key-scoped overwrite
         /// check).
+        ///
+        /// Defensive guard: since the "Upload to Database" button is hidden
+        /// entirely for modules where vm.SupportsUpload is false (see
+        /// SetViewModel above), this should never fire for those modules —
+        /// but the check is kept here too in case this handler is ever wired
+        /// to another control later.
         /// </summary>
         private async void BulkUpload_Click(object sender, RoutedEventArgs e)
         {
             if (_vm == null) return;
+
+            if (!_vm.SupportsUpload)
+            {
+                MessageBox.Show(
+                    $"Uploading is not available for {_vm.DisplayTitle} from this page.",
+                    _vm.DisplayTitle, MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
 
             string templatePath;
             try
@@ -255,6 +276,14 @@ namespace NonGamingDirectUploader.Views
         private async void Upload_Click(object sender, RoutedEventArgs e)
         {
             if (_vm == null) return;
+
+            if (!_vm.SupportsUpload)
+            {
+                MessageBox.Show(
+                    $"Uploading is not available for {_vm.DisplayTitle} from this page.",
+                    _vm.DisplayTitle, MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
 
             // Uses whatever is currently loaded via "Get Data" or in-grid edits.
             if (_vm.PreviewData == null || _vm.PreviewData.Rows.Count == 0)

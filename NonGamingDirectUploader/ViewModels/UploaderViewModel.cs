@@ -41,6 +41,17 @@ namespace NonGamingDirectUploader.ViewModels
         public virtual bool SupportsMonthlyMode => true;
 
         /// <summary>
+        /// Whether this module shows the "⬆ Upload to Database" button on its
+        /// UploaderPage. Defaults to true for every module. The three Online
+        /// Gaming modules (VirtualGames/SportsBook/FUNaloMAX) override this to
+        /// false — they're being migrated to a single combined Online Gaming
+        /// upload panel instead of uploading per-module here, so only the
+        /// upload action is hidden; "Get Data from Database" and everything
+        /// else on the page keeps working normally for them.
+        /// </summary>
+        public virtual bool SupportsUpload => true;
+
+        /// <summary>
         /// The columns for this table, in order: DB/DataTable field name,
         /// friendly display header, and expected data type. Used for the Data
         /// Preview grid, the Bulk Upload template, and — critically — for the
@@ -694,12 +705,18 @@ namespace NonGamingDirectUploader.ViewModels
     // AutomationConfig to match once confirmed. These now support both
     // Daily and Monthly modes, same as every other module (see
     // SupportsMonthlyMode above).
+    //
+    // SupportsUpload is overridden to false on all three — a single combined
+    // Online Gaming upload panel is planned separately, so the per-module
+    // "Upload to Database" button is hidden here. "Get Data from Database"
+    // still works normally for all three.
 
     public class VirtualGamesViewModel : UploaderViewModel
     {
         public override UploaderType UploaderType => UploaderType.VirtualGames;
         public override string DisplayTitle => "Virtual Games";
         public override string AccentHex => "#FF00C2A8";
+        public override bool SupportsUpload => false;
 
         public override (string Field, string Header, ColumnDataType Type)[] PreviewColumns => new[]
         {
@@ -717,6 +734,7 @@ namespace NonGamingDirectUploader.ViewModels
         public override UploaderType UploaderType => UploaderType.SportsBook;
         public override string DisplayTitle => "SportsBook";
         public override string AccentHex => "#FF5B8DEF";
+        public override bool SupportsUpload => false;
 
         public override (string Field, string Header, ColumnDataType Type)[] PreviewColumns => new[]
         {
@@ -731,6 +749,7 @@ namespace NonGamingDirectUploader.ViewModels
         public override UploaderType UploaderType => UploaderType.FUNaloMAX;
         public override string DisplayTitle => "FUNaloMAX";
         public override string AccentHex => "#FFF2994A";
+        public override bool SupportsUpload => false;
 
         public override (string Field, string Header, ColumnDataType Type)[] PreviewColumns => new[]
         {
