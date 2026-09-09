@@ -254,6 +254,89 @@
 
                         </StackPanel>
 
+                        <!-- ── ONLINE GAMING NAV ─────────────────────────────── -->
+                        <StackPanel x:Name="OnlineGamingNavPanel" Visibility="Collapsed">
+
+                            <!-- Virtual Games -->
+                            <Button x:Name="NavVirtualGames" Click="Nav_Click" Tag="VirtualGames"
+                                    Style="{StaticResource NavButtonActive}">
+                                <Grid Width="165">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Grid.Column="0" Width="32" Height="32" CornerRadius="8"
+                                            Background="#1A58A6FF" Margin="0,0,10,0">
+                                        <TextBlock Text="⚄" Foreground="#FF58A6FF" FontSize="16"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="Virtual Games" FontSize="13" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource TextPrimaryBrush}"/>
+                                        <TextBlock Text="Online Gaming · Daily" FontSize="10"
+                                                   Foreground="{StaticResource TextMutedBrush}"/>
+                                    </StackPanel>
+                                    <Ellipse x:Name="DotVirtualGames" Grid.Column="2"
+                                             Width="6" Height="6" Fill="#FF58A6FF"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
+                            </Button>
+
+                            <!-- SportsBook -->
+                            <Button x:Name="NavSportsBook" Click="Nav_Click" Tag="SportsBook"
+                                    Style="{StaticResource NavButton}">
+                                <Grid Width="165">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Grid.Column="0" Width="32" Height="32" CornerRadius="8"
+                                            Background="#1A2EA043" Margin="0,0,10,0">
+                                        <TextBlock Text="⚽" Foreground="#FF2EA043" FontSize="16"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="SportsBook" FontSize="13" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource TextPrimaryBrush}"/>
+                                        <TextBlock Text="Online Gaming · Daily" FontSize="10"
+                                                   Foreground="{StaticResource TextMutedBrush}"/>
+                                    </StackPanel>
+                                    <Ellipse x:Name="DotSportsBook" Grid.Column="2"
+                                             Width="6" Height="6" Fill="#FF2EA043"
+                                             VerticalAlignment="Center" Visibility="Collapsed"/>
+                                </Grid>
+                            </Button>
+
+                            <!-- FUNaloMAX -->
+                            <Button x:Name="NavFUNaloMAX" Click="Nav_Click" Tag="FUNaloMAX"
+                                    Style="{StaticResource NavButton}">
+                                <Grid Width="165">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Grid.Column="0" Width="32" Height="32" CornerRadius="8"
+                                            Background="#1ADA7633" Margin="0,0,10,0">
+                                        <TextBlock Text="★" Foreground="#FFDA7633" FontSize="16"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="FUNaloMAX" FontSize="13" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource TextPrimaryBrush}"/>
+                                        <TextBlock Text="Online Gaming · Daily" FontSize="10"
+                                                   Foreground="{StaticResource TextMutedBrush}"/>
+                                    </StackPanel>
+                                    <Ellipse x:Name="DotFUNaloMAX" Grid.Column="2"
+                                             Width="6" Height="6" Fill="#FFDA7633"
+                                             VerticalAlignment="Center" Visibility="Collapsed"/>
+                                </Grid>
+                            </Button>
+
+                        </StackPanel>
+
                     </Grid>
 
                     <!-- Sidebar footer -->
@@ -283,7 +366,7 @@
                                        Foreground="{StaticResource TextMutedBrush}"/>
                             <TextBlock Text="v2.0 — WPF Edition" FontSize="10"
                                        Foreground="{StaticResource TextMutedBrush}" Margin="0,2,0,0"/>
-                            <TextBlock Text="'Run Automation Now' only imports the currently active tab (NonGaming or Gaming). Scheduled runs use separate NonGaming/Gaming tasks." FontSize="9"
+                            <TextBlock Text="'Run Automation Now' only imports the currently active tab (NonGaming, Gaming, or Online Gaming). Scheduled runs use separate per-line tasks." FontSize="9"
                                        Foreground="{StaticResource TextMutedBrush}" Margin="0,6,0,0"
                                        TextWrapping="Wrap"/>
                         </StackPanel>
@@ -331,12 +414,13 @@
                                    FontSize="12" VerticalAlignment="Center"
                                    HorizontalAlignment="Center"/>
 
-                        <!-- Right side: NonGaming/Gaming switch + window controls -->
+                        <!-- Right side: business-line switch + window controls -->
                         <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
-                            <ComboBox x:Name="BusinessLineCombo" Width="130" Margin="0,0,16,0"
+                            <ComboBox x:Name="BusinessLineCombo" Width="150" Margin="0,0,16,0"
                                       SelectionChanged="BusinessLineCombo_Changed">
                                 <ComboBoxItem Content="NonGaming" IsSelected="True"/>
                                 <ComboBoxItem Content="Gaming"/>
+                                <ComboBoxItem Content="Online Gaming"/>
                             </ComboBox>
 
                             <Button x:Name="MinBtn" Content="─" Width="32" Height="28"

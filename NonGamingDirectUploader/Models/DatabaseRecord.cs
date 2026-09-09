@@ -46,10 +46,11 @@ namespace NonGamingDirectUploader.Models
     }
 
     /// <summary>
-    /// Every module handled by the app, across both business lines. Adding
-    /// Mass/VIP/Junket here — rather than a separate parallel type — lets
-    /// them reuse the same UploaderViewModel base, DatabaseService,
-    /// AutomationService, etc. as the NonGaming modules automatically.
+    /// Every module handled by the app, across all three business lines.
+    /// Adding VirtualGames / SportsBook / FUNaloMAX here — rather than a
+    /// separate parallel type — lets them reuse the same UploaderViewModel
+    /// base, DatabaseService, AutomationService, etc. as every other module
+    /// automatically.
     /// </summary>
     public enum UploaderType
     {
@@ -62,7 +63,12 @@ namespace NonGamingDirectUploader.Models
         // Gaming
         Mass,
         VIP,
-        Junket
+        Junket,
+
+        // Online Gaming — daily-only modules (see UploaderViewModel.SupportsMonthlyMode)
+        VirtualGames,
+        SportsBook,
+        FUNaloMAX
     }
 
     public enum UploadMode
@@ -81,7 +87,8 @@ namespace NonGamingDirectUploader.Models
     public enum BusinessLine
     {
         NonGaming,
-        Gaming
+        Gaming,
+        OnlineGaming
     }
 
     public static class UploaderTypeExtensions
@@ -92,6 +99,8 @@ namespace NonGamingDirectUploader.Models
                 => BusinessLine.NonGaming,
             UploaderType.Mass or UploaderType.VIP or UploaderType.Junket
                 => BusinessLine.Gaming,
+            UploaderType.VirtualGames or UploaderType.SportsBook or UploaderType.FUNaloMAX
+                => BusinessLine.OnlineGaming,
             _ => BusinessLine.NonGaming
         };
     }

@@ -37,6 +37,19 @@ namespace NonGamingDirectUploader.Models
 
             { (UploaderType.Junket,     PropertyType.SEC), @"U:\FI-FP&A\6. Users\Mark\DATABASE DUMMY\SEC\VIP.accdb" },
             { (UploaderType.Junket,     PropertyType.SN),  @"U:\FI-FP&A\6. Users\Mark\DATABASE DUMMY\SN\VIP.accdb" },
+
+            // ── Online Gaming — PLACEHOLDER PATHS, replace with your real Online Gaming .accdb ──
+            // All three modules share one OnlineGaming.accdb per property (same
+            // pattern as VIP/Junket sharing one database) — split into separate
+            // files here instead if each module actually lives in its own .accdb.
+            { (UploaderType.VirtualGames, PropertyType.SEC), @"U:\FI-FP&A\6. Users\Mark\DATABASE DUMMY\SEC\OtherGaming_DB.accdb" },
+            //{ (UploaderType.VirtualGames, PropertyType.SN),  @"U:\FI-FP&A\6. Users\Mark\DATABASE DUMMY\SN\OnlineGaming.accdb" },
+
+            { (UploaderType.SportsBook,   PropertyType.SEC), @"U:\FI-FP&A\6. Users\Mark\DATABASE DUMMY\SEC\OtherGaming_DB.accdb" },
+            //{ (UploaderType.SportsBook,   PropertyType.SN),  @"U:\FI-FP&A\6. Users\Mark\DATABASE DUMMY\SN\OnlineGaming.accdb" },
+
+            { (UploaderType.FUNaloMAX,    PropertyType.SEC), @"U:\FI-FP&A\6. Users\Mark\DATABASE DUMMY\SEC\OtherGaming_DB.accdb" },
+            //{ (UploaderType.FUNaloMAX,    PropertyType.SN),  @"U:\FI-FP&A\6. Users\Mark\DATABASE DUMMY\SN\OnlineGaming.accdb" },
         };
 
         /// <summary>Resolves the designated database path for a module/property pair.</summary>

@@ -134,11 +134,15 @@
 
                         <Separator Margin="0,0,0,20"/>
 
-                        <!-- UPLOAD MODE -->
-                        <TextBlock Text="UPLOAD MODE" Foreground="{StaticResource TextMutedBrush}"
+                        <!-- UPLOAD MODE — collapsed entirely in code-behind for
+                             Daily-only modules (SupportsMonthlyMode == false,
+                             e.g. Online Gaming: Virtual Games/SportsBook/
+                             FUNaloMAX), so those modules never show a Monthly
+                             tab to switch to. -->
+                        <TextBlock x:Name="ModeSectionLabel" Text="UPLOAD MODE" Foreground="{StaticResource TextMutedBrush}"
                                    FontSize="10" FontWeight="Bold" Margin="0,0,0,12"/>
 
-                        <Grid Margin="0,0,0,20">
+                        <Grid x:Name="ModeToggleGrid" Margin="0,0,0,20">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="*"/>

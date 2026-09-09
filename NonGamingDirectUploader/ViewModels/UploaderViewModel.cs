@@ -13,9 +13,10 @@ namespace NonGamingDirectUploader.ViewModels
 {
     /// <summary>
     /// Shared base for every uploader panel — NonGaming (Others/F&amp;B/Hotel/
-    /// Visitation) and Gaming (Mass/VIP/Junket) alike. Mirrors the VBA
-    /// pattern: pick property → get/upload against the module's pre-assigned
-    /// database → edit/delete individual records in-place.
+    /// Visitation), Gaming (Mass/VIP/Junket), and Online Gaming (VirtualGames/
+    /// SportsBook/FUNaloMAX) alike. Mirrors the VBA pattern: pick property →
+    /// get/upload against the module's pre-assigned database → edit/delete
+    /// individual records in-place.
     /// </summary>
     public abstract class UploaderViewModel : BaseViewModel
     {
@@ -23,6 +24,15 @@ namespace NonGamingDirectUploader.ViewModels
         public abstract UploaderType UploaderType { get; }
         public abstract string DisplayTitle { get; }
         public abstract string AccentHex { get; }
+
+        /// <summary>
+        /// Whether this module offers the Daily/Monthly mode toggle at all.
+        /// Online Gaming modules (VirtualGames/SportsBook/FUNaloMAX) are
+        /// Daily-only — the UI hides the Monthly tab entirely for them and
+        /// Mode always stays UploadMode.Daily. Every other module keeps the
+        /// existing Daily + Monthly toggle by defaulting to true.
+        /// </summary>
+        public virtual bool SupportsMonthlyMode => true;
 
         /// <summary>
         /// The columns for this table, in order: DB/DataTable field name,
@@ -72,7 +82,14 @@ namespace NonGamingDirectUploader.ViewModels
         public UploadMode Mode
         {
             get => _mode;
-            set { Set(ref _mode, value); OnPropertyChanged(nameof(IsDailyMode)); OnPropertyChanged(nameof(IsMonthlyMode)); }
+            set
+            {
+                // Daily-only modules ignore any attempt to switch to Monthly —
+                // belt-and-braces alongside the UI hiding the Monthly tab.
+                if (value == UploadMode.Monthly && !SupportsMonthlyMode)
+                    value = UploadMode.Daily;
+                Set(ref _mode, value); OnPropertyChanged(nameof(IsDailyMode)); OnPropertyChanged(nameof(IsMonthlyMode));
+            }
         }
         public bool IsDailyMode => Mode == UploadMode.Daily;
         public bool IsMonthlyMode => Mode == UploadMode.Monthly;
@@ -502,6 +519,9 @@ namespace NonGamingDirectUploader.ViewModels
             UploaderType.Mass => "Curr_Mass",
             UploaderType.VIP => "Curr_VIP",
             UploaderType.Junket => "Curr_Junket",
+            UploaderType.VirtualGames => "Virtual_Games",
+            UploaderType.SportsBook => "SportsBook",
+            UploaderType.FUNaloMAX => "FUNaloMAX",
             _ => ""
         };
 
@@ -658,6 +678,65 @@ namespace NonGamingDirectUploader.ViewModels
             ("Turnover",        "Turnover",         ColumnDataType.Number),
             ("Revenue",         "Revenue",          ColumnDataType.Number),
             ("Table_Count",     "Table Count",      ColumnDataType.Number),
+        };
+    }
+
+    // ── Concrete ViewModels — Online Gaming ─────────────────────────────────
+    // Daily-only (SupportsMonthlyMode overridden to false — the Monthly tab
+    // is hidden for these three in UploaderPage.xaml.cs). PLACEHOLDER column
+    // sets below — edit these to match your real VirtualGames/SportsBook/
+    // FUNaloMAX Access table columns (field names, order, and data types),
+    // and update UploadKeyConfig / DatabaseConfig / AutomationConfig to
+    // match once confirmed.
+
+    public class VirtualGamesViewModel : UploaderViewModel
+    {
+        public override UploaderType UploaderType => UploaderType.VirtualGames;
+        public override string DisplayTitle => "Virtual Games";
+        public override string AccentHex => "#FF00C2A8";
+        public override bool SupportsMonthlyMode => false;
+
+        public override (string Field, string Header, ColumnDataType Type)[] PreviewColumns => new[]
+        {
+            ("Dte",       "Dte",        ColumnDataType.Date),
+            ("Brand",     "Brand",  ColumnDataType.Text),
+            ("Provider",  "Provider",  ColumnDataType.Text),
+            ("Wager",      "Wager",       ColumnDataType.Number),
+            ("Win",      "Win",       ColumnDataType.Number),
+            
+        };
+    }
+
+    public class SportsBookViewModel : UploaderViewModel
+    {
+        public override UploaderType UploaderType => UploaderType.SportsBook;
+        public override string DisplayTitle => "SportsBook";
+        public override string AccentHex => "#FF5B8DEF";
+        public override bool SupportsMonthlyMode => false;
+
+        public override (string Field, string Header, ColumnDataType Type)[] PreviewColumns => new[]
+        {
+            ("Dte",         "Dte",          ColumnDataType.Date),
+            ("Wager",       "Wager",        ColumnDataType.Number),
+            ("Win",         "Win",       ColumnDataType.Number),
+        };
+    }
+
+    public class FUNaloMAXViewModel : UploaderViewModel
+    {
+        public override UploaderType UploaderType => UploaderType.FUNaloMAX;
+        public override string DisplayTitle => "FUNaloMAX";
+        public override string AccentHex => "#FFF2994A";
+        public override bool SupportsMonthlyMode => false;
+
+        public override (string Field, string Header, ColumnDataType Type)[] PreviewColumns => new[]
+        {
+            ("DTE",      "DTE",       ColumnDataType.Date),
+            ("GameType", "GameType",  ColumnDataType.Number),
+            ("GameName", "GameName",  ColumnDataType.Number),
+            ("Wager",    "Wager",     ColumnDataType.Number),
+            ("Win",      "Win",       ColumnDataType.Number),
+            ("Payout",   "Payout",    ColumnDataType.Number),
         };
     }
 }

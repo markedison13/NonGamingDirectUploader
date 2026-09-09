@@ -35,6 +35,12 @@ namespace NonGamingDirectUploader.Helpers
             UploaderType.VIP => "Curr_VIP",
             UploaderType.Junket => "Curr_VIP",
 
+            // Online Gaming — EDIT to your real Access table names if these
+            // differ. Each module has its own table (unlike VIP/Junket).
+            UploaderType.VirtualGames => "Virtual_Games",
+            UploaderType.SportsBook => "Sportsbook",
+            UploaderType.FUNaloMAX => "FunaloMax",
+
             _ => throw new ArgumentOutOfRangeException(nameof(type))
         };
 

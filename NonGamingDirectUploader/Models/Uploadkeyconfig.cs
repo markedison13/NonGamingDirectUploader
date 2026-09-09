@@ -15,6 +15,11 @@ namespace NonGamingDirectUploader.Models
     /// for different comp types/currencies), this key is too broad and will
     /// reproduce the same overwrite bug for F&amp;B specifically. Confirm and
     /// update before relying on this in production.
+    ///
+    /// The three Online Gaming entries below (VirtualGames/SportsBook/
+    /// FUNaloMAX) are ALSO BEST-GUESS defaults — DTE + one category column —
+    /// based on the placeholder PreviewColumns added for these modules.
+    /// Confirm the real column names/uniqueness before relying on this.
     /// </summary>
     public static class UploadKeyConfig
     {
@@ -32,6 +37,11 @@ namespace NonGamingDirectUploader.Models
             { UploaderType.Mass,       new[] { "DTE", "Pit", "PITID", "TABLE", "GAME", "Segment" } },
             { UploaderType.VIP,        new[] { "DTE", "VIP_Name", "Commission_Type", "Curr" } },
             { UploaderType.Junket,     new[] { "DTE", "VIP_Name", "Commission_Type", "Curr" } },
+
+            // ── Online Gaming — NOT YET CONFIRMED, see warning above. ────────
+            { UploaderType.VirtualGames, new[] { "Dte", "Brand", "Provider", "Wager", "Win" } },
+            { UploaderType.SportsBook,   new[] { "Dte", "Wager", "Win" } },
+            { UploaderType.FUNaloMAX,    new[] { "Dte", "GameType", "GameName", "Wager", "Win", "Payout" } },
         };
 
         /// <summary>

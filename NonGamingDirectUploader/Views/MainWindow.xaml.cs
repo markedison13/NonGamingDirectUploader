@@ -24,6 +24,11 @@ namespace NonGamingDirectUploader.Views
         private readonly UploaderPage _vipPage = new();
         private readonly UploaderPage _junketPage = new();
 
+        // Online Gaming pages
+        private readonly UploaderPage _virtualGamesPage = new();
+        private readonly UploaderPage _sportsBookPage = new();
+        private readonly UploaderPage _funaloMaxPage = new();
+
         private string _activeTag = "Others";
         private BusinessLine _activeLine = BusinessLine.NonGaming;
 
@@ -62,6 +67,10 @@ namespace NonGamingDirectUploader.Views
             _vipPage.SetViewModel(_vm.VIPVM);
             _junketPage.SetViewModel(_vm.JunketVM);
 
+            _virtualGamesPage.SetViewModel(_vm.VirtualGamesVM);
+            _sportsBookPage.SetViewModel(_vm.SportsBookVM);
+            _funaloMaxPage.SetViewModel(_vm.FUNaloMAXVM);
+
             PageLabel.Text = "Others Uploader";
 
             // Defensive fallback: if the compiler-wired field is somehow
@@ -82,7 +91,7 @@ namespace NonGamingDirectUploader.Views
             host.Content = _othersPage;
 
             // Warm up the OLE DB driver for every configured database (both
-            // SEC and SN, across both business lines) right away, on app
+            // SEC and SN, across every business line) right away, on app
             // launch — before any button is clicked.
             _ = WarmUpDatabaseDriversAsync();
         }
@@ -109,15 +118,19 @@ namespace NonGamingDirectUploader.Views
             await _vm.MassVM.TestConnectionAsync();
             await _vm.VIPVM.TestConnectionAsync();
             await _vm.JunketVM.TestConnectionAsync();
+
+            await _vm.VirtualGamesVM.TestConnectionAsync();
+            await _vm.SportsBookVM.TestConnectionAsync();
+            await _vm.FUNaloMAXVM.TestConnectionAsync();
         }
 
         // ── Automation ────────────────────────────────────────────────────────
-        // Scoped to whichever business line (NonGaming/Gaming) is currently
-        // active in the UI, via _activeLine — set in
-        // BusinessLineCombo_Changed below. Previously this always ran
-        // AutomationService.RunImportAsync() with no filter, which imported
-        // NonGaming AND Gaming files together regardless of which tab you
-        // were on.
+        // Scoped to whichever business line (NonGaming/Gaming/Online Gaming)
+        // is currently active in the UI, via _activeLine — set in
+        // BusinessLineCombo_Changed below. Only imports files for the active
+        // tab; scheduled/unattended runs should use the dedicated
+        // --auto-upload-* launch args instead (see App.xaml.cs) so each line
+        // runs independently.
         private async void RunAutomation_Click(object sender, RoutedEventArgs e)
         {
             var btn = (Button)sender;
@@ -141,7 +154,7 @@ namespace NonGamingDirectUploader.Views
             }
         }
 
-        // ── Business line switch (NonGaming / Gaming) ────────────────────────
+        // ── Business line switch (NonGaming / Gaming / Online Gaming) ────────
         private void BusinessLineCombo_Changed(object sender, SelectionChangedEventArgs e)
         {
             // Same early-fire guard as SwitchTo — IsSelected="True" on the
@@ -150,22 +163,33 @@ namespace NonGamingDirectUploader.Views
             if (PageHost == null) return;
 
             if (BusinessLineCombo.SelectedItem is not ComboBoxItem item) return;
-            var selected = item.Content?.ToString() == "Gaming" ? BusinessLine.Gaming : BusinessLine.NonGaming;
+            var content = item.Content?.ToString();
+
+            BusinessLine selected = content switch
+            {
+                "Gaming" => BusinessLine.Gaming,
+                "Online Gaming" => BusinessLine.OnlineGaming,
+                _ => BusinessLine.NonGaming
+            };
 
             _activeLine = selected;
             _vm.ActiveBusinessLine = selected;
 
-            if (selected == BusinessLine.NonGaming)
+            NonGamingNavPanel.Visibility = selected == BusinessLine.NonGaming ? Visibility.Visible : Visibility.Collapsed;
+            GamingNavPanel.Visibility = selected == BusinessLine.Gaming ? Visibility.Visible : Visibility.Collapsed;
+            OnlineGamingNavPanel.Visibility = selected == BusinessLine.OnlineGaming ? Visibility.Visible : Visibility.Collapsed;
+
+            switch (selected)
             {
-                NonGamingNavPanel.Visibility = Visibility.Visible;
-                GamingNavPanel.Visibility = Visibility.Collapsed;
-                SwitchTo("Others");
-            }
-            else
-            {
-                NonGamingNavPanel.Visibility = Visibility.Collapsed;
-                GamingNavPanel.Visibility = Visibility.Visible;
-                SwitchTo("Mass");
+                case BusinessLine.NonGaming:
+                    SwitchTo("Others");
+                    break;
+                case BusinessLine.Gaming:
+                    SwitchTo("Mass");
+                    break;
+                case BusinessLine.OnlineGaming:
+                    SwitchTo("VirtualGames");
+                    break;
             }
         }
 
@@ -189,7 +213,7 @@ namespace NonGamingDirectUploader.Views
 
             _activeTag = tag;
 
-            // Reset all nav styles across BOTH panels
+            // Reset all nav styles across ALL THREE panels
             NavOthers.Style = (Style)FindResource("NavButton");
             NavFnB.Style = (Style)FindResource("NavButton");
             NavHotel.Style = (Style)FindResource("NavButton");
@@ -197,6 +221,9 @@ namespace NonGamingDirectUploader.Views
             NavMass.Style = (Style)FindResource("NavButton");
             NavVIP.Style = (Style)FindResource("NavButton");
             NavJunket.Style = (Style)FindResource("NavButton");
+            NavVirtualGames.Style = (Style)FindResource("NavButton");
+            NavSportsBook.Style = (Style)FindResource("NavButton");
+            NavFUNaloMAX.Style = (Style)FindResource("NavButton");
 
             // Hide all dots
             DotOthers.Visibility = Visibility.Collapsed;
@@ -206,6 +233,9 @@ namespace NonGamingDirectUploader.Views
             DotMass.Visibility = Visibility.Collapsed;
             DotVIP.Visibility = Visibility.Collapsed;
             DotJunket.Visibility = Visibility.Collapsed;
+            DotVirtualGames.Visibility = Visibility.Collapsed;
+            DotSportsBook.Visibility = Visibility.Collapsed;
+            DotFUNaloMAX.Visibility = Visibility.Collapsed;
 
             // Activate selected
             switch (tag)
@@ -262,11 +292,34 @@ namespace NonGamingDirectUploader.Views
                     PageLabel.Text = "Junket Uploader";
                     _vm.ActiveUploader = UploaderType.Junket;
                     break;
+
+                // Online Gaming (Daily-only — see UploaderViewModel.SupportsMonthlyMode)
+                case "VirtualGames":
+                    PageHost.Content = _virtualGamesPage;
+                    NavVirtualGames.Style = (Style)FindResource("NavButtonActive");
+                    DotVirtualGames.Visibility = Visibility.Visible;
+                    PageLabel.Text = "Virtual Games Uploader (Daily)";
+                    _vm.ActiveUploader = UploaderType.VirtualGames;
+                    break;
+                case "SportsBook":
+                    PageHost.Content = _sportsBookPage;
+                    NavSportsBook.Style = (Style)FindResource("NavButtonActive");
+                    DotSportsBook.Visibility = Visibility.Visible;
+                    PageLabel.Text = "SportsBook Uploader (Daily)";
+                    _vm.ActiveUploader = UploaderType.SportsBook;
+                    break;
+                case "FUNaloMAX":
+                    PageHost.Content = _funaloMaxPage;
+                    NavFUNaloMAX.Style = (Style)FindResource("NavButtonActive");
+                    DotFUNaloMAX.Visibility = Visibility.Visible;
+                    PageLabel.Text = "FUNaloMAX Uploader (Daily)";
+                    _vm.ActiveUploader = UploaderType.FUNaloMAX;
+                    break;
             }
         }
 
         // ── Property radio ────────────────────────────────────────────────────
-        // Property (SEC/SN) applies across BOTH business lines at once.
+        // Property (SEC/SN) applies across EVERY business line at once.
         private void Property_Checked(object sender, RoutedEventArgs e)
         {
             var prop = RadioSEC.IsChecked == true ? PropertyType.SEC : PropertyType.SN;
@@ -278,6 +331,10 @@ namespace NonGamingDirectUploader.Views
             _vm.MassVM.Property = prop;
             _vm.VIPVM.Property = prop;
             _vm.JunketVM.Property = prop;
+
+            _vm.VirtualGamesVM.Property = prop;
+            _vm.SportsBookVM.Property = prop;
+            _vm.FUNaloMAXVM.Property = prop;
         }
 
         // ── Custom window chrome ──────────────────────────────────────────────

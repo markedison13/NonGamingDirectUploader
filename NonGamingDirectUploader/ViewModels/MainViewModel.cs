@@ -29,5 +29,10 @@ namespace NonGamingDirectUploader.ViewModels
         public MassViewModel MassVM { get; } = new();
         public VIPViewModel VIPVM { get; } = new();
         public JunketViewModel JunketVM { get; } = new();
+
+        // ── Online Gaming ────────────────────────────────────────────────────
+        public VirtualGamesViewModel VirtualGamesVM { get; } = new();
+        public SportsBookViewModel SportsBookVM { get; } = new();
+        public FUNaloMAXViewModel FUNaloMAXVM { get; } = new();
     }
 }
