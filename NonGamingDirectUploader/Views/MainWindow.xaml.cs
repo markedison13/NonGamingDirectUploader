@@ -293,26 +293,28 @@ namespace NonGamingDirectUploader.Views
                     _vm.ActiveUploader = UploaderType.Junket;
                     break;
 
-                // Online Gaming (Daily-only — see UploaderViewModel.SupportsMonthlyMode)
+                // Online Gaming — now support both Daily and Monthly, same as
+                // every other module (see UploaderViewModel.SupportsMonthlyMode),
+                // so labels no longer say "(Daily)".
                 case "VirtualGames":
                     PageHost.Content = _virtualGamesPage;
                     NavVirtualGames.Style = (Style)FindResource("NavButtonActive");
                     DotVirtualGames.Visibility = Visibility.Visible;
-                    PageLabel.Text = "Virtual Games Uploader (Daily)";
+                    PageLabel.Text = "Virtual Games Uploader";
                     _vm.ActiveUploader = UploaderType.VirtualGames;
                     break;
                 case "SportsBook":
                     PageHost.Content = _sportsBookPage;
                     NavSportsBook.Style = (Style)FindResource("NavButtonActive");
                     DotSportsBook.Visibility = Visibility.Visible;
-                    PageLabel.Text = "SportsBook Uploader (Daily)";
+                    PageLabel.Text = "SportsBook Uploader";
                     _vm.ActiveUploader = UploaderType.SportsBook;
                     break;
                 case "FUNaloMAX":
                     PageHost.Content = _funaloMaxPage;
                     NavFUNaloMAX.Style = (Style)FindResource("NavButtonActive");
                     DotFUNaloMAX.Visibility = Visibility.Visible;
-                    PageLabel.Text = "FUNaloMAX Uploader (Daily)";
+                    PageLabel.Text = "FUNaloMAX Uploader";
                     _vm.ActiveUploader = UploaderType.FUNaloMAX;
                     break;
             }

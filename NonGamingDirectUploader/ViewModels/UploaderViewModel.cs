@@ -27,10 +27,16 @@ namespace NonGamingDirectUploader.ViewModels
 
         /// <summary>
         /// Whether this module offers the Daily/Monthly mode toggle at all.
-        /// Online Gaming modules (VirtualGames/SportsBook/FUNaloMAX) are
-        /// Daily-only — the UI hides the Monthly tab entirely for them and
-        /// Mode always stays UploadMode.Daily. Every other module keeps the
-        /// existing Daily + Monthly toggle by defaulting to true.
+        /// Every module — including Online Gaming (VirtualGames/SportsBook/
+        /// FUNaloMAX) — supports both Daily and Monthly fetch/upload, so this
+        /// always defaults to true. (Previously the three Online Gaming
+        /// modules overrode this to false, which silently forced Mode back to
+        /// Daily any time the UI tried to switch to Monthly — even though the
+        /// Monthly tab/date pickers stayed visible and clickable. That
+        /// mismatch was why a Sept 1–30 monthly fetch only ever returned 1
+        /// record: it was actually running a Daily fetch against whatever
+        /// date sat in the Daily picker. Removing the override lets Monthly
+        /// mode actually reach FetchMonthlyAsync for these modules too.)
         /// </summary>
         public virtual bool SupportsMonthlyMode => true;
 
@@ -682,19 +688,18 @@ namespace NonGamingDirectUploader.ViewModels
     }
 
     // ── Concrete ViewModels — Online Gaming ─────────────────────────────────
-    // Daily-only (SupportsMonthlyMode overridden to false — the Monthly tab
-    // is hidden for these three in UploaderPage.xaml.cs). PLACEHOLDER column
-    // sets below — edit these to match your real VirtualGames/SportsBook/
-    // FUNaloMAX Access table columns (field names, order, and data types),
-    // and update UploadKeyConfig / DatabaseConfig / AutomationConfig to
-    // match once confirmed.
+    // PLACEHOLDER column sets below — edit these to match your real
+    // VirtualGames/SportsBook/FUNaloMAX Access table columns (field names,
+    // order, and data types), and update UploadKeyConfig / DatabaseConfig /
+    // AutomationConfig to match once confirmed. These now support both
+    // Daily and Monthly modes, same as every other module (see
+    // SupportsMonthlyMode above).
 
     public class VirtualGamesViewModel : UploaderViewModel
     {
         public override UploaderType UploaderType => UploaderType.VirtualGames;
         public override string DisplayTitle => "Virtual Games";
         public override string AccentHex => "#FF00C2A8";
-        public override bool SupportsMonthlyMode => false;
 
         public override (string Field, string Header, ColumnDataType Type)[] PreviewColumns => new[]
         {
@@ -703,7 +708,7 @@ namespace NonGamingDirectUploader.ViewModels
             ("Provider",  "Provider",  ColumnDataType.Text),
             ("Wager",      "Wager",       ColumnDataType.Number),
             ("Win",      "Win",       ColumnDataType.Number),
-            
+
         };
     }
 
@@ -712,7 +717,6 @@ namespace NonGamingDirectUploader.ViewModels
         public override UploaderType UploaderType => UploaderType.SportsBook;
         public override string DisplayTitle => "SportsBook";
         public override string AccentHex => "#FF5B8DEF";
-        public override bool SupportsMonthlyMode => false;
 
         public override (string Field, string Header, ColumnDataType Type)[] PreviewColumns => new[]
         {
@@ -727,7 +731,6 @@ namespace NonGamingDirectUploader.ViewModels
         public override UploaderType UploaderType => UploaderType.FUNaloMAX;
         public override string DisplayTitle => "FUNaloMAX";
         public override string AccentHex => "#FFF2994A";
-        public override bool SupportsMonthlyMode => false;
 
         public override (string Field, string Header, ColumnDataType Type)[] PreviewColumns => new[]
         {
