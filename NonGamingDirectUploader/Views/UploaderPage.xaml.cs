@@ -31,8 +31,15 @@ namespace NonGamingDirectUploader.Views
         public void SetViewModel(UploaderViewModel vm)
         {
             _vm = vm;
-            TitleBlock.Text = $"{vm.DisplayTitle} Uploader";
-            SubtitleBlock.Text = $"Upload daily or monthly data — Table: {vm.DisplayTitle switch
+
+            // Modules with SupportsUpload == false (currently the three
+            // Online Gaming ones) use this page purely to view/edit/delete
+            // existing records — uploading happens on their separate
+            // OnlineGamingUploaderPage instead — so the header should say
+            // "Data Viewer", not "Uploader".
+            TitleBlock.Text = vm.SupportsUpload ? $"{vm.DisplayTitle} Uploader" : $"{vm.DisplayTitle} Data Viewer";
+
+            var tableName = vm.DisplayTitle switch
             {
                 "Others" => "Curr_Others",
                 "F&B" => "Curr_FnB",
@@ -41,8 +48,14 @@ namespace NonGamingDirectUploader.Views
                 "Mass" => "Cur_Mass",
                 "VIP" => "Curr_VIP",
                 "Junket" => "Curr_VIP",
+                "Virtual Games" => "Virtual_Games",
+                "SportsBook" => "Sportsbook",
+                "FUNaloMAX" => "FunaloMax",
                 _ => "?"
-            }}";
+            };
+            SubtitleBlock.Text = vm.SupportsUpload
+                ? $"Upload daily or monthly data — Table: {tableName}"
+                : $"View, edit, or delete existing records — Table: {tableName}. New records are entered via the separate Uploader page.";
 
             // Bind accent color
             var color = (Color)ColorConverter.ConvertFromString(vm.AccentHex);
@@ -59,9 +72,9 @@ namespace NonGamingDirectUploader.Views
 
             // FIX: hide "⬆ Upload to Database" for modules that don't support
             // uploading from this page (currently the three Online Gaming
-            // modules — VirtualGames/SportsBook/FUNaloMAX — which are being
-            // migrated to a single combined upload panel). "Get Data from
-            // Database" and everything else on the page is left untouched.
+            // modules — VirtualGames/SportsBook/FUNaloMAX — which now use the
+            // dedicated OnlineGamingPage instead). "Get Data from Database"
+            // and everything else on the page is left untouched.
             UploadBtn.Visibility = vm.SupportsUpload ? Visibility.Visible : Visibility.Collapsed;
 
             // VM property-change → UI refresh

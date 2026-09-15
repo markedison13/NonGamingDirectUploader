@@ -44,10 +44,11 @@ namespace NonGamingDirectUploader.ViewModels
         /// Whether this module shows the "⬆ Upload to Database" button on its
         /// UploaderPage. Defaults to true for every module. The three Online
         /// Gaming modules (VirtualGames/SportsBook/FUNaloMAX) override this to
-        /// false — they're being migrated to a single combined Online Gaming
-        /// upload panel instead of uploading per-module here, so only the
-        /// upload action is hidden; "Get Data from Database" and everything
-        /// else on the page keeps working normally for them.
+        /// false — they now use the dedicated OnlineGamingPage (Data Viewer +
+        /// fixed-category Uploader tabs) instead of the generic UploaderPage's
+        /// editable Data Preview grid / bulk-Excel upload, so only the
+        /// "Upload to Database" action is hidden here; "Get Data from
+        /// Database" (used to drive the Data Viewer) still works normally.
         /// </summary>
         public virtual bool SupportsUpload => true;
 
@@ -86,10 +87,17 @@ namespace NonGamingDirectUploader.ViewModels
                     OnPropertyChanged(nameof(ResolvedDbPath));
                     OnPropertyChanged(nameof(DbPathDisplay));
                     OnPropertyChanged(nameof(HasDb));
+                    // No automatic connection ping here anymore — switching
+                    // SEC/SN just clears the stale badge/data; the NEXT real
+                    // action (Get Data, Upload, or an explicit Test
+                    // Connection click) is what re-establishes IsConnected.
+                    // This also matters for Online Gaming specifically: all
+                    // three modules there share one .accdb file, and firing
+                    // an auto-ping for every module on toggle used to open
+                    // several simultaneous connections to that same file.
                     IsConnected = false;
                     PreviewData = null;
                     TotalRows = 0;
-                    _ = TestConnectionAsync();
                 }
             }
         }
@@ -249,11 +257,13 @@ namespace NonGamingDirectUploader.ViewModels
 
                 PreviewData = dt;
                 TotalRows = dt.Rows.Count;
+                IsConnected = true; // a successful fetch IS proof of connectivity — no separate ping needed
                 Log($"Fetched {TotalRows} row(s) from {TableName}.");
                 SetStatus($"✓ {TotalRows} record(s) loaded.", "#FF3FB950");
             }
             catch (Exception ex)
             {
+                IsConnected = false;
                 SetStatus($"✗ Fetch failed: {ex.Message}", "#FFFF4444");
                 Log($"ERROR: {ex.Message}");
             }
@@ -274,9 +284,10 @@ namespace NonGamingDirectUploader.ViewModels
         /// Same upload pipeline as UploadAsync (key-scoped delete, then
         /// insert) but with no confirmation dialogs — any conflicting
         /// key-matched records are overwritten automatically. Used by
-        /// unattended/automated imports (the folder-watching automation)
-        /// where no one is present to click a prompt. Returns a summary
-        /// instead of showing a "done" MessageBox.
+        /// unattended/automated imports (the folder-watching automation) and
+        /// by the Online Gaming Uploader tabs (single-category submits),
+        /// where no one is present to click a prompt each time. Returns a
+        /// summary instead of showing a "done" MessageBox.
         /// </summary>
         public Task<(bool Success, string Message, int RowsUploaded)> UploadSilentAsync(DataTable uploadData)
             => ExecuteUploadAsync(uploadData, interactive: false);
@@ -434,6 +445,7 @@ namespace NonGamingDirectUploader.ViewModels
                 int uploaded = await DatabaseService.UploadRowsAsync(ResolvedDbPath, UploaderType, uploadData);
                 Progress = 100;
                 TotalRows = uploaded;
+                IsConnected = true; // a successful upload IS proof of connectivity
                 Log($"✓ Upload complete — {uploaded} row(s) inserted.");
                 var successMsg = duplicateRowsInBatch > 0
                     ? $"{uploaded} record(s) uploaded ({duplicateRowsInBatch} duplicate row(s) in the file were skipped)."
@@ -445,6 +457,7 @@ namespace NonGamingDirectUploader.ViewModels
             }
             catch (Exception ex)
             {
+                IsConnected = false;
                 SetStatus($"✗ Upload failed: {ex.Message}", "#FFFF4444");
                 Log($"ERROR: {ex.Message}");
                 return (false, ex.Message, 0);
@@ -487,11 +500,13 @@ namespace NonGamingDirectUploader.ViewModels
             {
                 await DatabaseService.UpdateRowAsync(ResolvedDbPath, UploaderType, row);
                 row.AcceptChanges();
+                IsConnected = true;
                 Log("✓ Row updated.");
                 SetStatus("✓ Row updated.", "#FF3FB950");
             }
             catch (Exception ex)
             {
+                IsConnected = false;
                 SetStatus($"✗ Update failed: {ex.Message}", "#FFFF4444");
                 Log($"ERROR: {ex.Message}");
             }
@@ -515,11 +530,13 @@ namespace NonGamingDirectUploader.ViewModels
                 await DatabaseService.DeleteRowAsync(ResolvedDbPath, UploaderType, row);
                 row.Table?.Rows.Remove(row);
                 TotalRows = PreviewData?.Rows.Count ?? 0;
+                IsConnected = true;
                 Log("✓ Row deleted.");
                 SetStatus("✓ Row deleted.", "#FF3FB950");
             }
             catch (Exception ex)
             {
+                IsConnected = false;
                 SetStatus($"✗ Delete failed: {ex.Message}", "#FFFF4444");
                 Log($"ERROR: {ex.Message}");
             }
@@ -565,6 +582,135 @@ namespace NonGamingDirectUploader.ViewModels
             => LogLines.Insert(0, $"[{DateTime.Now:HH:mm:ss}] {msg}");
 
         public void ClearLog() => LogLines.Clear();
+    }
+
+    // ── Online Gaming base ───────────────────────────────────────────────────
+    /// <summary>
+    /// Base for the three Online Gaming modules (VirtualGames/SportsBook/
+    /// FUNaloMAX). Adds the fixed-category "Uploader" panel (see the
+    /// mockup: a handful of named boxes, each taking just a Wager/Win pair)
+    /// plus a matching read-only "Data Viewer" for the selected date, on top
+    /// of everything UploaderViewModel already provides. Replaces the
+    /// generic UploaderPage's editable Data Preview grid for these three
+    /// modules — see OnlineGamingPage.
+    /// </summary>
+    public abstract class OnlineGamingUploaderViewModel : UploaderViewModel
+    {
+        /// <summary>The fixed set of categories shown as individual boxes on this module's Uploader tab.</summary>
+        protected abstract OnlineGamingCategoryDefinition[] CategoryDefinitions { get; }
+
+        /// <summary>True for FUNaloMAX — every category there shows a derived, read-only Payout (Wager - Win).</summary>
+        public virtual bool CategoriesHavePayout => false;
+
+        /// <summary>Constant value written to a "GameType" column for every category row, if this module's table has one (FUNaloMAX: "FunaloMax"). Null if not applicable.</summary>
+        protected virtual string? FixedGameTypeValue => null;
+
+        public ObservableCollection<CategoryEntryViewModel> Categories { get; }
+
+        // Defaults to yesterday, per the requested design — the person can
+        // still pick any other date via the DatePicker. Changing it also
+        // drives the Data Viewer grid for this module.
+        private DateTime _uploadDate = DateTime.Today.AddDays(-1);
+        public DateTime UploadDate
+        {
+            get => _uploadDate;
+            set
+            {
+                if (Set(ref _uploadDate, value))
+                {
+                    SelectedDate = value; // keep the inherited daily-fetch date in sync
+                    _ = RefreshViewerAsync();
+                }
+            }
+        }
+
+        protected OnlineGamingUploaderViewModel()
+        {
+            Categories = new ObservableCollection<CategoryEntryViewModel>();
+            foreach (var def in CategoryDefinitions)
+                Categories.Add(new CategoryEntryViewModel(def, CategoriesHavePayout));
+
+            SelectedDate = _uploadDate;
+            Mode = UploadMode.Daily;
+        }
+
+        /// <summary>Re-fetches the Data Viewer grid for UploadDate. Virtual so FUNaloMAX can also refresh its MegaFunalo summary.</summary>
+        public virtual Task RefreshViewerAsync() => FetchDataAsync();
+
+        /// <summary>
+        /// Uploads ONE category's Wager/Win (plus a derived Payout, for
+        /// modules where CategoriesHavePayout is true) for UploadDate. Reuses
+        /// the same key-scoped, silent (no confirmation dialog) upload
+        /// pipeline as the automation import, so re-submitting the same
+        /// category/date just replaces that one record instead of adding a
+        /// duplicate.
+        /// </summary>
+        public async Task<bool> SubmitCategoryAsync(CategoryEntryViewModel entry)
+        {
+            double.TryParse(entry.WagerText, out var wager);
+            double.TryParse(entry.WinText, out var win);
+            var payout = wager - win;
+
+            var dt = BuildSingleRowTable(entry, wager, win, payout);
+            var (success, message, _) = await UploadSilentAsync(dt);
+
+            if (success)
+            {
+                entry.WagerText = "";
+                entry.WinText = "";
+                await RefreshViewerAsync();
+                await AfterCategorySubmitAsync();
+            }
+            else
+            {
+                MessageBox.Show(message, DisplayTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+            return success;
+        }
+
+        /// <summary>Submits every category that has a Wager and/or Win entered; blank categories are left untouched.</summary>
+        public async Task SubmitAllAsync()
+        {
+            foreach (var entry in Categories.ToList())
+            {
+                if (string.IsNullOrWhiteSpace(entry.WagerText) && string.IsNullOrWhiteSpace(entry.WinText))
+                    continue;
+                await SubmitCategoryAsync(entry);
+            }
+        }
+
+        /// <summary>
+        /// Hook for modules that need to do something after each successful
+        /// category submission. FUNaloMAX overrides this to recompute and
+        /// push the MegaFunalo totals (see FUNaloMAXViewModel).
+        /// </summary>
+        protected virtual Task AfterCategorySubmitAsync() => Task.CompletedTask;
+
+        private DataTable BuildSingleRowTable(CategoryEntryViewModel entry, double wager, double win, double payout)
+        {
+            var dt = new DataTable();
+            foreach (var c in PreviewColumns)
+                dt.Columns.Add(c.Field, typeof(object));
+
+            var row = dt.NewRow();
+            foreach (var c in PreviewColumns)
+            {
+                row[c.Field] = c.Field.ToUpperInvariant() switch
+                {
+                    "DTE" => UploadDate.Date,
+                    "BRAND" => entry.GameName,
+                    "PROVIDER" => (object?)entry.Provider ?? DBNull.Value,
+                    "GAMETYPE" => (object?)FixedGameTypeValue ?? DBNull.Value,
+                    "GAMENAME" => entry.GameName,
+                    "WAGER" => wager,
+                    "WIN" => win,
+                    "PAYOUT" => payout,
+                    _ => DBNull.Value
+                };
+            }
+            dt.Rows.Add(row);
+            return dt;
+        }
     }
 
     // ── Concrete ViewModels — NonGaming ─────────────────────────────────────
@@ -699,66 +845,118 @@ namespace NonGamingDirectUploader.ViewModels
     }
 
     // ── Concrete ViewModels — Online Gaming ─────────────────────────────────
-    // PLACEHOLDER column sets below — edit these to match your real
-    // VirtualGames/SportsBook/FUNaloMAX Access table columns (field names,
-    // order, and data types), and update UploadKeyConfig / DatabaseConfig /
-    // AutomationConfig to match once confirmed. These now support both
-    // Daily and Monthly modes, same as every other module (see
-    // SupportsMonthlyMode above).
-    //
-    // SupportsUpload is overridden to false on all three — a single combined
-    // Online Gaming upload panel is planned separately, so the per-module
-    // "Upload to Database" button is hidden here. "Get Data from Database"
-    // still works normally for all three.
+    // These now derive from OnlineGamingUploaderViewModel, which adds the
+    // fixed-category Uploader panel (Categories) and the UploadDate-driven
+    // Data Viewer (RefreshViewerAsync/PreviewData) used by OnlineGamingPage.
+    // SupportsUpload stays false — uploading happens per-category (or via
+    // "Submit All") from that page, not through the generic UploaderPage.
 
-    public class VirtualGamesViewModel : UploaderViewModel
+    public class VirtualGamesViewModel : OnlineGamingUploaderViewModel
     {
         public override UploaderType UploaderType => UploaderType.VirtualGames;
         public override string DisplayTitle => "Virtual Games";
         public override string AccentHex => "#FF00C2A8";
         public override bool SupportsUpload => false;
 
+        protected override OnlineGamingCategoryDefinition[] CategoryDefinitions => OnlineGamingCategories.VirtualGames;
+
         public override (string Field, string Header, ColumnDataType Type)[] PreviewColumns => new[]
         {
             ("Dte",       "Dte",        ColumnDataType.Date),
-            ("Brand",     "Brand",  ColumnDataType.Text),
-            ("Provider",  "Provider",  ColumnDataType.Text),
-            ("Wager",      "Wager",       ColumnDataType.Number),
-            ("Win",      "Win",       ColumnDataType.Number),
-
+            ("Brand",     "Brand",      ColumnDataType.Text),
+            ("Provider",  "Provider",   ColumnDataType.Text),
+            ("Wager",     "Wager",      ColumnDataType.Number),
+            ("Win",       "Win",        ColumnDataType.Number),
         };
     }
 
-    public class SportsBookViewModel : UploaderViewModel
+    public class SportsBookViewModel : OnlineGamingUploaderViewModel
     {
         public override UploaderType UploaderType => UploaderType.SportsBook;
         public override string DisplayTitle => "SportsBook";
         public override string AccentHex => "#FF5B8DEF";
         public override bool SupportsUpload => false;
 
+        protected override OnlineGamingCategoryDefinition[] CategoryDefinitions => OnlineGamingCategories.SportsBook;
+
         public override (string Field, string Header, ColumnDataType Type)[] PreviewColumns => new[]
         {
-            ("Dte",         "Dte",          ColumnDataType.Date),
-            ("Wager",       "Wager",        ColumnDataType.Number),
-            ("Win",         "Win",       ColumnDataType.Number),
+            ("Dte",   "Dte",   ColumnDataType.Date),
+            ("Wager", "Wager", ColumnDataType.Number),
+            ("Win",   "Win",   ColumnDataType.Number),
         };
     }
 
-    public class FUNaloMAXViewModel : UploaderViewModel
+    public class FUNaloMAXViewModel : OnlineGamingUploaderViewModel
     {
         public override UploaderType UploaderType => UploaderType.FUNaloMAX;
         public override string DisplayTitle => "FUNaloMAX";
         public override string AccentHex => "#FFF2994A";
         public override bool SupportsUpload => false;
 
+        // The "twist": every FUNaloMAX category derives a read-only Payout
+        // (Wager - Win) shown right in its Uploader box, and GameType is
+        // always the fixed value "FunaloMax" for every row.
+        public override bool CategoriesHavePayout => true;
+        protected override string? FixedGameTypeValue => "FunaloMax";
+        protected override OnlineGamingCategoryDefinition[] CategoryDefinitions => OnlineGamingCategories.FUNaloMAX;
+
         public override (string Field, string Header, ColumnDataType Type)[] PreviewColumns => new[]
         {
             ("DTE",      "DTE",       ColumnDataType.Date),
-            ("GameType", "GameType",  ColumnDataType.Number),
-            ("GameName", "GameName",  ColumnDataType.Number),
+            ("GameType", "GameType",  ColumnDataType.Text),
+            ("GameName", "GameName",  ColumnDataType.Text),
             ("Wager",    "Wager",     ColumnDataType.Number),
             ("Win",      "Win",       ColumnDataType.Number),
             ("Payout",   "Payout",    ColumnDataType.Number),
         };
+
+        // ── MegaFunalo (daily total across every FUNaloMAX category) ────────
+        private DataTable? _megaFunaloData;
+        public DataTable? MegaFunaloData
+        {
+            get => _megaFunaloData;
+            set => Set(ref _megaFunaloData, value);
+        }
+
+        public override async Task RefreshViewerAsync()
+        {
+            await base.RefreshViewerAsync(); // fetches the FUNaloMAX rows into PreviewData
+            if (!HasDb) return;
+            try { MegaFunaloData = await MegaFunaloService.FetchDailyAsync(ResolvedDbPath, UploadDate); }
+            catch { /* viewer-only, best effort */ }
+        }
+
+        /// <summary>
+        /// Recomputes MegaFunalo's totals from EVERY FUNaloMAX row currently
+        /// on file for UploadDate (not just the category(ies) just
+        /// submitted), so the aggregate stays correct however the categories
+        /// were submitted — one at a time or via "Submit All".
+        /// </summary>
+        protected override async Task AfterCategorySubmitAsync()
+        {
+            if (!HasDb || PreviewData == null) return;
+
+            double totalWager = 0, totalWin = 0, totalPayout = 0;
+            foreach (DataRow row in PreviewData.Rows)
+            {
+                totalWager += ToDouble(row["Wager"]);
+                totalWin += ToDouble(row["Win"]);
+                totalPayout += ToDouble(row["Payout"]);
+            }
+
+            try
+            {
+                await MegaFunaloService.UpsertTotalsAsync(ResolvedDbPath, UploadDate, totalWager, totalWin, totalPayout);
+                MegaFunaloData = await MegaFunaloService.FetchDailyAsync(ResolvedDbPath, UploadDate);
+                Log($"✓ MegaFunalo totals updated for {UploadDate:MM/dd/yyyy} — Wager {totalWager:N2}, Win {totalWin:N2}, Payout {totalPayout:N2}.");
+            }
+            catch (Exception ex)
+            {
+                Log($"ERROR updating MegaFunalo totals: {ex.Message}");
+            }
+        }
+
+        private static double ToDouble(object? v) => v == null || v == DBNull.Value ? 0 : Convert.ToDouble(v);
     }
 }

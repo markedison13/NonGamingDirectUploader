@@ -257,7 +257,10 @@
                         <!-- ── ONLINE GAMING NAV ─────────────────────────────── -->
                         <StackPanel x:Name="OnlineGamingNavPanel" Visibility="Collapsed">
 
-                            <!-- Virtual Games -->
+                            <TextBlock Text="DATA VIEWER" Foreground="{StaticResource TextMutedBrush}"
+                                       FontSize="9" FontWeight="Bold" Margin="16,4,0,4"/>
+
+                            <!-- Table Games (Virtual Games) — Data Viewer -->
                             <Button x:Name="NavVirtualGames" Click="Nav_Click" Tag="VirtualGames"
                                     Style="{StaticResource NavButtonActive}">
                                 <Grid Width="165">
@@ -272,9 +275,9 @@
                                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
                                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                        <TextBlock Text="Virtual Games" FontSize="13" FontWeight="SemiBold"
+                                        <TextBlock Text="Table Games" FontSize="13" FontWeight="SemiBold"
                                                    Foreground="{StaticResource TextPrimaryBrush}"/>
-                                        <TextBlock Text="Online Gaming · Daily" FontSize="10"
+                                        <TextBlock Text="Online Gaming" FontSize="10"
                                                    Foreground="{StaticResource TextMutedBrush}"/>
                                     </StackPanel>
                                     <Ellipse x:Name="DotVirtualGames" Grid.Column="2"
@@ -283,7 +286,7 @@
                                 </Grid>
                             </Button>
 
-                            <!-- SportsBook -->
+                            <!-- SportsBook — Data Viewer -->
                             <Button x:Name="NavSportsBook" Click="Nav_Click" Tag="SportsBook"
                                     Style="{StaticResource NavButton}">
                                 <Grid Width="165">
@@ -300,7 +303,7 @@
                                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                         <TextBlock Text="SportsBook" FontSize="13" FontWeight="SemiBold"
                                                    Foreground="{StaticResource TextPrimaryBrush}"/>
-                                        <TextBlock Text="Online Gaming · Daily" FontSize="10"
+                                        <TextBlock Text="Online Gaming" FontSize="10"
                                                    Foreground="{StaticResource TextMutedBrush}"/>
                                     </StackPanel>
                                     <Ellipse x:Name="DotSportsBook" Grid.Column="2"
@@ -309,7 +312,7 @@
                                 </Grid>
                             </Button>
 
-                            <!-- FUNaloMAX -->
+                            <!-- FUNaloMAX — Data Viewer -->
                             <Button x:Name="NavFUNaloMAX" Click="Nav_Click" Tag="FUNaloMAX"
                                     Style="{StaticResource NavButton}">
                                 <Grid Width="165">
@@ -326,10 +329,91 @@
                                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                         <TextBlock Text="FUNaloMAX" FontSize="13" FontWeight="SemiBold"
                                                    Foreground="{StaticResource TextPrimaryBrush}"/>
-                                        <TextBlock Text="Online Gaming · Daily" FontSize="10"
+                                        <TextBlock Text="Online Gaming" FontSize="10"
                                                    Foreground="{StaticResource TextMutedBrush}"/>
                                     </StackPanel>
                                     <Ellipse x:Name="DotFUNaloMAX" Grid.Column="2"
+                                             Width="6" Height="6" Fill="#FFDA7633"
+                                             VerticalAlignment="Center" Visibility="Collapsed"/>
+                                </Grid>
+                            </Button>
+
+                            <TextBlock Text="UPLOADER" Foreground="{StaticResource TextMutedBrush}"
+                                       FontSize="9" FontWeight="Bold" Margin="16,12,0,4"/>
+
+                            <!-- Table Games — Uploader -->
+                            <Button x:Name="NavVirtualGamesUploader" Click="Nav_Click" Tag="VirtualGamesUploader"
+                                    Style="{StaticResource NavButton}">
+                                <Grid Width="165">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Grid.Column="0" Width="32" Height="32" CornerRadius="8"
+                                            Background="#1A58A6FF" Margin="0,0,10,0">
+                                        <TextBlock Text="⬆" Foreground="#FF58A6FF" FontSize="16"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="Table Games" FontSize="13" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource TextPrimaryBrush}"/>
+                                        <TextBlock Text="Uploader" FontSize="10"
+                                                   Foreground="{StaticResource TextMutedBrush}"/>
+                                    </StackPanel>
+                                    <Ellipse x:Name="DotVirtualGamesUploader" Grid.Column="2"
+                                             Width="6" Height="6" Fill="#FF58A6FF"
+                                             VerticalAlignment="Center" Visibility="Collapsed"/>
+                                </Grid>
+                            </Button>
+
+                            <!-- SportsBook — Uploader -->
+                            <Button x:Name="NavSportsBookUploader" Click="Nav_Click" Tag="SportsBookUploader"
+                                    Style="{StaticResource NavButton}">
+                                <Grid Width="165">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Grid.Column="0" Width="32" Height="32" CornerRadius="8"
+                                            Background="#1A2EA043" Margin="0,0,10,0">
+                                        <TextBlock Text="⬆" Foreground="#FF2EA043" FontSize="16"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="SportsBook" FontSize="13" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource TextPrimaryBrush}"/>
+                                        <TextBlock Text="Uploader" FontSize="10"
+                                                   Foreground="{StaticResource TextMutedBrush}"/>
+                                    </StackPanel>
+                                    <Ellipse x:Name="DotSportsBookUploader" Grid.Column="2"
+                                             Width="6" Height="6" Fill="#FF2EA043"
+                                             VerticalAlignment="Center" Visibility="Collapsed"/>
+                                </Grid>
+                            </Button>
+
+                            <!-- FUNaloMAX — Uploader -->
+                            <Button x:Name="NavFUNaloMAXUploader" Click="Nav_Click" Tag="FUNaloMAXUploader"
+                                    Style="{StaticResource NavButton}">
+                                <Grid Width="165">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Grid.Column="0" Width="32" Height="32" CornerRadius="8"
+                                            Background="#1ADA7633" Margin="0,0,10,0">
+                                        <TextBlock Text="⬆" Foreground="#FFDA7633" FontSize="16"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="FUNaloMAX" FontSize="13" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource TextPrimaryBrush}"/>
+                                        <TextBlock Text="Uploader" FontSize="10"
+                                                   Foreground="{StaticResource TextMutedBrush}"/>
+                                    </StackPanel>
+                                    <Ellipse x:Name="DotFUNaloMAXUploader" Grid.Column="2"
                                              Width="6" Height="6" Fill="#FFDA7633"
                                              VerticalAlignment="Center" Visibility="Collapsed"/>
                                 </Grid>
@@ -344,29 +428,32 @@
                             BorderBrush="{StaticResource BorderBrush}"
                             BorderThickness="0,1,0,0">
                         <StackPanel>
-                            <TextBlock Text="PROPERTY" Foreground="{StaticResource TextMutedBrush}"
-                                       FontSize="10" FontWeight="Bold" Margin="0,0,0,8"/>
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                <RadioButton x:Name="RadioSEC" Content="SEC Property" IsChecked="True"
-                                             Foreground="{StaticResource TextSecondaryBrush}"
-                                             FontSize="12" GroupName="Property"
-                                             Checked="Property_Checked"/>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                                <RadioButton x:Name="RadioSN" Content="SN Property"
-                                             Foreground="{StaticResource TextSecondaryBrush}"
-                                             FontSize="12" GroupName="Property"
-                                             Checked="Property_Checked"/>
+                            <StackPanel x:Name="PropertyPanel">
+                                <TextBlock Text="PROPERTY" Foreground="{StaticResource TextMutedBrush}"
+                                           FontSize="10" FontWeight="Bold" Margin="0,0,0,8"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <RadioButton x:Name="RadioSEC" Content="SEC Property" IsChecked="True"
+                                                 Foreground="{StaticResource TextSecondaryBrush}"
+                                                 FontSize="12" GroupName="Property"
+                                                 Checked="Property_Checked"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                    <RadioButton x:Name="RadioSN" Content="SN Property"
+                                                 Foreground="{StaticResource TextSecondaryBrush}"
+                                                 FontSize="12" GroupName="Property"
+                                                 Checked="Property_Checked"/>
+                                </StackPanel>
                             </StackPanel>
 
-                            <Button Content="▶  Run Automation Now" Style="{StaticResource GhostButton}"
+                            <Button x:Name="RunAutomationBtn" Content="▶  Run Automation Now" Style="{StaticResource GhostButton}"
                                     HorizontalAlignment="Stretch" Margin="0,0,0,10"
                                     Click="RunAutomation_Click"/>
-                            <TextBlock Text="FI-FP&amp;A · OOD System" FontSize="10"
+                            <TextBlock Text="FI-FP&amp;A · Direct Uploader" FontSize="10"
                                        Foreground="{StaticResource TextMutedBrush}"/>
                             <TextBlock Text="v2.0 — WPF Edition" FontSize="10"
                                        Foreground="{StaticResource TextMutedBrush}" Margin="0,2,0,0"/>
-                            <TextBlock Text="'Run Automation Now' only imports the currently active tab (NonGaming, Gaming, or Online Gaming). Scheduled runs use separate per-line tasks." FontSize="9"
+                            <TextBlock x:Name="AutomationNoteText"
+                                       Text="'Run Automation Now' only imports the currently active tab (NonGaming or Gaming). Scheduled runs use separate per-line tasks." FontSize="9"
                                        Foreground="{StaticResource TextMutedBrush}" Margin="0,6,0,0"
                                        TextWrapping="Wrap"/>
                         </StackPanel>

@@ -35,25 +35,53 @@ namespace NonGamingDirectUploader.Helpers
     /// DeleteDaily) is scoped by Segment ('Premium' = VIP, anything else =
     /// Junket) inside DatabaseService, so importing the VIP file will never
     /// delete that day's Junket rows, and vice versa.
+    ///
+    /// Online Gaming (VirtualGames/SportsBook/FUNaloMAX) is INTENTIONALLY
+    /// NEVER automated — those three modules are entered manually through
+    /// OnlineGamingPage's per-category Uploader tabs, there is no source
+    /// file for them to watch. This is enforced explicitly below (not just
+    /// left to AutomationConfig having no entries for them), so passing
+    /// BusinessLine.OnlineGaming — or omitting the filter entirely — can
+    /// never accidentally process them even if someone adds config for them
+    /// later by mistake.
     /// </summary>
     public static class AutomationService
     {
         /// <summary>
         /// Runs one full import pass across every configured module/property
-        /// file. If <paramref name="businessLineFilter"/> is null, BOTH
-        /// NonGaming and Gaming modules are processed (original behavior —
-        /// kept for the legacy "--auto-upload" launch arg). Pass
-        /// BusinessLine.NonGaming or BusinessLine.Gaming to run only that
-        /// side — this is what lets NonGaming and Gaming be scheduled/run as
-        /// two fully independent automation passes.
+        /// file, for NonGaming and/or Gaming ONLY — Online Gaming is never
+        /// automated (see class remarks) and is skipped even if explicitly
+        /// requested via <paramref name="businessLineFilter"/>.
+        ///
+        /// If <paramref name="businessLineFilter"/> is null, BOTH NonGaming
+        /// and Gaming modules are processed (original behavior — kept for
+        /// the legacy "--auto-upload" launch arg). Pass BusinessLine.NonGaming
+        /// or BusinessLine.Gaming to run only that side — this is what lets
+        /// NonGaming and Gaming be scheduled/run as two fully independent
+        /// automation passes.
         /// </summary>
         public static async Task<List<string>> RunImportAsync(BusinessLine? businessLineFilter = null)
         {
-            var scopeLabel = businessLineFilter?.ToString() ?? "All";
+            if (businessLineFilter == BusinessLine.OnlineGaming)
+            {
+                return new List<string>
+                {
+                    $"=== Automation run started {DateTime.Now:yyyy-MM-dd HH:mm:ss} (OnlineGaming) ===",
+                    "Online Gaming is entered manually via the Uploader tabs and is never automated — nothing to do.",
+                    $"=== Automation run finished {DateTime.Now:yyyy-MM-dd HH:mm:ss} ==="
+                };
+            }
+
+            var scopeLabel = businessLineFilter?.ToString() ?? "NonGaming + Gaming";
             var log = new List<string> { $"=== Automation run started {DateTime.Now:yyyy-MM-dd HH:mm:ss} ({scopeLabel}) ===" };
 
             foreach (UploaderType type in Enum.GetValues(typeof(UploaderType)))
             {
+                // Online Gaming is never touched by automation, regardless of
+                // filter — see class remarks.
+                if (type.GetBusinessLine() == BusinessLine.OnlineGaming)
+                    continue;
+
                 // Skip modules outside the requested business line, if a filter was given.
                 if (businessLineFilter.HasValue && type.GetBusinessLine() != businessLineFilter.Value)
                     continue;
@@ -131,6 +159,11 @@ namespace NonGamingDirectUploader.Helpers
             return log;
         }
 
+        /// <summary>
+        /// Online Gaming types never reach here — the loop above skips
+        /// BusinessLine.OnlineGaming entirely before calling this — so there
+        /// are intentionally no VirtualGames/SportsBook/FUNaloMAX cases.
+        /// </summary>
         private static UploaderViewModel CreateViewModel(UploaderType type) => type switch
         {
             // NonGaming
@@ -144,7 +177,8 @@ namespace NonGamingDirectUploader.Helpers
             UploaderType.VIP => new VIPViewModel(),
             UploaderType.Junket => new JunketViewModel(),
 
-            _ => throw new ArgumentOutOfRangeException(nameof(type))
+            _ => throw new ArgumentOutOfRangeException(nameof(type),
+                $"{type} is not automated (Online Gaming modules are entered manually and never reach CreateViewModel).")
         };
 
         /// <summary>Copies a file into a Processed/Errors subfolder for a record, without touching the original.</summary>

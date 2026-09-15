@@ -24,10 +24,17 @@ namespace NonGamingDirectUploader.Views
         private readonly UploaderPage _vipPage = new();
         private readonly UploaderPage _junketPage = new();
 
-        // Online Gaming pages
-        private readonly UploaderPage _virtualGamesPage = new();
-        private readonly UploaderPage _sportsBookPage = new();
-        private readonly UploaderPage _funaloMaxPage = new();
+        // Online Gaming — Data Viewers reuse the SAME UploaderPage as every
+        // other module (Get Data, Edit, Delete — no bulk upload since
+        // SupportsUpload is false for these three). Uploaders are their own
+        // separate pages (fixed category boxes, Wager/Win only).
+        private readonly UploaderPage _virtualGamesViewerPage = new();
+        private readonly UploaderPage _sportsBookViewerPage = new();
+        private readonly UploaderPage _funaloMaxViewerPage = new();
+
+        private readonly OnlineGamingUploaderPage _virtualGamesUploaderPage = new();
+        private readonly OnlineGamingUploaderPage _sportsBookUploaderPage = new();
+        private readonly OnlineGamingUploaderPage _funaloMaxUploaderPage = new();
 
         private string _activeTag = "Others";
         private BusinessLine _activeLine = BusinessLine.NonGaming;
@@ -67,9 +74,13 @@ namespace NonGamingDirectUploader.Views
             _vipPage.SetViewModel(_vm.VIPVM);
             _junketPage.SetViewModel(_vm.JunketVM);
 
-            _virtualGamesPage.SetViewModel(_vm.VirtualGamesVM);
-            _sportsBookPage.SetViewModel(_vm.SportsBookVM);
-            _funaloMaxPage.SetViewModel(_vm.FUNaloMAXVM);
+            _virtualGamesViewerPage.SetViewModel(_vm.VirtualGamesVM);
+            _sportsBookViewerPage.SetViewModel(_vm.SportsBookVM);
+            _funaloMaxViewerPage.SetViewModel(_vm.FUNaloMAXVM);
+
+            _virtualGamesUploaderPage.SetViewModel(_vm.VirtualGamesVM);
+            _sportsBookUploaderPage.SetViewModel(_vm.SportsBookVM);
+            _funaloMaxUploaderPage.SetViewModel(_vm.FUNaloMAXVM);
 
             PageLabel.Text = "Others Uploader";
 
@@ -90,38 +101,13 @@ namespace NonGamingDirectUploader.Views
 
             host.Content = _othersPage;
 
-            // Warm up the OLE DB driver for every configured database (both
-            // SEC and SN, across every business line) right away, on app
-            // launch — before any button is clicked.
-            _ = WarmUpDatabaseDriversAsync();
-        }
-
-        private async System.Threading.Tasks.Task WarmUpDatabaseDriversAsync()
-        {
-            var paths = new HashSet<string>();
-            foreach (UploaderType type in Enum.GetValues(typeof(UploaderType)))
-                foreach (PropertyType prop in Enum.GetValues(typeof(PropertyType)))
-                    if (DatabaseConfig.TryGetPath(type, prop, out var path))
-                        paths.Add(path);
-
-            foreach (var path in paths)
-            {
-                try { await DatabaseService.TestConnectionAsync(path); }
-                catch { /* silent warm-up only */ }
-            }
-
-            await _vm.OthersVM.TestConnectionAsync();
-            await _vm.FnBVM.TestConnectionAsync();
-            await _vm.HotelVM.TestConnectionAsync();
-            await _vm.VisitationVM.TestConnectionAsync();
-
-            await _vm.MassVM.TestConnectionAsync();
-            await _vm.VIPVM.TestConnectionAsync();
-            await _vm.JunketVM.TestConnectionAsync();
-
-            await _vm.VirtualGamesVM.TestConnectionAsync();
-            await _vm.SportsBookVM.TestConnectionAsync();
-            await _vm.FUNaloMAXVM.TestConnectionAsync();
+            // NOTE: there is deliberately NO automatic "warm up every
+            // database on launch" step here anymore. Every module's
+            // Connected/Not Connected badge now only updates as a side
+            // effect of an actual action — Get Data, Upload, Edit, Delete,
+            // or clicking "Test Connection" explicitly — instead of the app
+            // pinging all 10+ configured databases (including any that are
+            // still placeholder paths) the instant the window opens.
         }
 
         // ── Automation ────────────────────────────────────────────────────────
@@ -179,6 +165,21 @@ namespace NonGamingDirectUploader.Views
             GamingNavPanel.Visibility = selected == BusinessLine.Gaming ? Visibility.Visible : Visibility.Collapsed;
             OnlineGamingNavPanel.Visibility = selected == BusinessLine.OnlineGaming ? Visibility.Visible : Visibility.Collapsed;
 
+            // Online Gaming is entered manually via the Uploader tabs and is
+            // never automated (see AutomationService) — hide the button
+            // entirely there instead of leaving a control that would just
+            // run and report "nothing to do".
+            bool isOnlineGaming = selected == BusinessLine.OnlineGaming;
+            RunAutomationBtn.Visibility = isOnlineGaming ? Visibility.Collapsed : Visibility.Visible;
+            AutomationNoteText.Visibility = isOnlineGaming ? Visibility.Collapsed : Visibility.Visible;
+
+            // TEMPORARY: only SEC is configured for Online Gaming right now
+            // (see DatabaseConfig — the SN entries for VirtualGames/
+            // SportsBook/FUNaloMAX are commented out), so the SEC/SN picker
+            // has nothing meaningful to switch between there. Hide it while
+            // that's the case; bring it back once SN paths are added.
+            PropertyPanel.Visibility = isOnlineGaming ? Visibility.Collapsed : Visibility.Visible;
+
             switch (selected)
             {
                 case BusinessLine.NonGaming:
@@ -224,6 +225,9 @@ namespace NonGamingDirectUploader.Views
             NavVirtualGames.Style = (Style)FindResource("NavButton");
             NavSportsBook.Style = (Style)FindResource("NavButton");
             NavFUNaloMAX.Style = (Style)FindResource("NavButton");
+            NavVirtualGamesUploader.Style = (Style)FindResource("NavButton");
+            NavSportsBookUploader.Style = (Style)FindResource("NavButton");
+            NavFUNaloMAXUploader.Style = (Style)FindResource("NavButton");
 
             // Hide all dots
             DotOthers.Visibility = Visibility.Collapsed;
@@ -236,6 +240,9 @@ namespace NonGamingDirectUploader.Views
             DotVirtualGames.Visibility = Visibility.Collapsed;
             DotSportsBook.Visibility = Visibility.Collapsed;
             DotFUNaloMAX.Visibility = Visibility.Collapsed;
+            DotVirtualGamesUploader.Visibility = Visibility.Collapsed;
+            DotSportsBookUploader.Visibility = Visibility.Collapsed;
+            DotFUNaloMAXUploader.Visibility = Visibility.Collapsed;
 
             // Activate selected
             switch (tag)
@@ -293,28 +300,51 @@ namespace NonGamingDirectUploader.Views
                     _vm.ActiveUploader = UploaderType.Junket;
                     break;
 
-                // Online Gaming — now support both Daily and Monthly, same as
-                // every other module (see UploaderViewModel.SupportsMonthlyMode),
-                // so labels no longer say "(Daily)".
+                // Online Gaming — Data Viewers (reuse UploaderPage, same as
+                // Gaming/NonGaming: Get Data + Edit + Delete, no bulk upload).
                 case "VirtualGames":
-                    PageHost.Content = _virtualGamesPage;
+                    PageHost.Content = _virtualGamesViewerPage;
                     NavVirtualGames.Style = (Style)FindResource("NavButtonActive");
                     DotVirtualGames.Visibility = Visibility.Visible;
-                    PageLabel.Text = "Virtual Games Uploader";
+                    PageLabel.Text = "Online Gaming — Table Games Data Viewer";
                     _vm.ActiveUploader = UploaderType.VirtualGames;
                     break;
                 case "SportsBook":
-                    PageHost.Content = _sportsBookPage;
+                    PageHost.Content = _sportsBookViewerPage;
                     NavSportsBook.Style = (Style)FindResource("NavButtonActive");
                     DotSportsBook.Visibility = Visibility.Visible;
-                    PageLabel.Text = "SportsBook Uploader";
+                    PageLabel.Text = "Online Gaming — SportsBook Data Viewer";
                     _vm.ActiveUploader = UploaderType.SportsBook;
                     break;
                 case "FUNaloMAX":
-                    PageHost.Content = _funaloMaxPage;
+                    PageHost.Content = _funaloMaxViewerPage;
                     NavFUNaloMAX.Style = (Style)FindResource("NavButtonActive");
                     DotFUNaloMAX.Visibility = Visibility.Visible;
-                    PageLabel.Text = "FUNaloMAX Uploader";
+                    PageLabel.Text = "Online Gaming — FUNaloMAX Data Viewer";
+                    _vm.ActiveUploader = UploaderType.FUNaloMAX;
+                    break;
+
+                // Online Gaming — Uploaders (separate pages, fixed category
+                // boxes, Wager/Win only).
+                case "VirtualGamesUploader":
+                    PageHost.Content = _virtualGamesUploaderPage;
+                    NavVirtualGamesUploader.Style = (Style)FindResource("NavButtonActive");
+                    DotVirtualGamesUploader.Visibility = Visibility.Visible;
+                    PageLabel.Text = "Online Gaming — Table Games Uploader";
+                    _vm.ActiveUploader = UploaderType.VirtualGames;
+                    break;
+                case "SportsBookUploader":
+                    PageHost.Content = _sportsBookUploaderPage;
+                    NavSportsBookUploader.Style = (Style)FindResource("NavButtonActive");
+                    DotSportsBookUploader.Visibility = Visibility.Visible;
+                    PageLabel.Text = "Online Gaming — SportsBook Uploader";
+                    _vm.ActiveUploader = UploaderType.SportsBook;
+                    break;
+                case "FUNaloMAXUploader":
+                    PageHost.Content = _funaloMaxUploaderPage;
+                    NavFUNaloMAXUploader.Style = (Style)FindResource("NavButtonActive");
+                    DotFUNaloMAXUploader.Visibility = Visibility.Visible;
+                    PageLabel.Text = "Online Gaming — FUNaloMAX Uploader";
                     _vm.ActiveUploader = UploaderType.FUNaloMAX;
                     break;
             }

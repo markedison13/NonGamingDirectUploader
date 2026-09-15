@@ -42,6 +42,9 @@ namespace NonGamingDirectUploader.Models
             // All three modules share one OnlineGaming.accdb per property (same
             // pattern as VIP/Junket sharing one database) — split into separate
             // files here instead if each module actually lives in its own .accdb.
+            // The MegaFunalo aggregate table (see MegaFunaloService) is assumed
+            // to live in this SAME file, since it's derived purely from the
+            // FUNaloMAX rows below.
             { (UploaderType.VirtualGames, PropertyType.SEC), @"U:\FI-FP&A\6. Users\Mark\DATABASE DUMMY\SEC\OtherGaming_DB.accdb" },
             //{ (UploaderType.VirtualGames, PropertyType.SN),  @"U:\FI-FP&A\6. Users\Mark\DATABASE DUMMY\SN\OnlineGaming.accdb" },
 

@@ -23,15 +23,19 @@ namespace NonGamingDirectUploader
             AppDomain.CurrentDomain.UnhandledException += App_DomainUnhandledException;
             TaskScheduler.UnobservedTaskException += App_UnobservedTaskException;
 
-            // Headless mode — launched by Windows Task Scheduler. Four
-            // possible args, so each business line can run as a fully
+            // Headless mode — launched by Windows Task Scheduler. Two
+            // scoped args, so NonGaming and Gaming can each run as a fully
             // independent scheduled task (different times, independent
-            // success/failure) instead of always running together:
+            // success/failure) instead of always running together. There is
+            // deliberately NO "--auto-upload-onlinegaming" arg — Online
+            // Gaming (Table Games/SportsBook/FUNaloMAX) is entered manually
+            // through OnlineGamingPage's Uploader tabs and is never
+            // automated (see AutomationService remarks), so there's nothing
+            // for a scheduled task to do for it.
             //
             //   NonGamingDirectUploader.exe --auto-upload-nongaming
             //   NonGamingDirectUploader.exe --auto-upload-gaming
-            //   NonGamingDirectUploader.exe --auto-upload-onlinegaming
-            //   NonGamingDirectUploader.exe --auto-upload            (legacy: runs ALL)
+            //   NonGamingDirectUploader.exe --auto-upload            (legacy: runs NonGaming + Gaming)
             //
             // Runs the folder import once, with no window shown, then exits.
             if (Array.Exists(e.Args, a => string.Equals(a, "--auto-upload-nongaming", StringComparison.OrdinalIgnoreCase)))
@@ -48,17 +52,11 @@ namespace NonGamingDirectUploader
                 return;
             }
 
-            if (Array.Exists(e.Args, a => string.Equals(a, "--auto-upload-onlinegaming", StringComparison.OrdinalIgnoreCase)))
-            {
-                await AutomationService.RunImportAsync(BusinessLine.OnlineGaming);
-                Shutdown();
-                return;
-            }
-
             // Legacy arg — kept for backward compatibility with any existing
-            // scheduled task. Runs ALL business lines in one pass, same as
-            // the original behavior. Prefer the scoped args above for new
-            // Task Scheduler setups.
+            // scheduled task. Runs NonGaming + Gaming in one pass (Online
+            // Gaming is skipped unconditionally by AutomationService, even
+            // here). Prefer the scoped args above for new Task Scheduler
+            // setups.
             if (Array.Exists(e.Args, a => string.Equals(a, "--auto-upload", StringComparison.OrdinalIgnoreCase)))
             {
                 await AutomationService.RunImportAsync();

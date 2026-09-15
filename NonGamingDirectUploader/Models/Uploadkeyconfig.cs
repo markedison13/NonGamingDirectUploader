@@ -17,9 +17,13 @@ namespace NonGamingDirectUploader.Models
     /// update before relying on this in production.
     ///
     /// The three Online Gaming entries below (VirtualGames/SportsBook/
-    /// FUNaloMAX) are ALSO BEST-GUESS defaults — DTE + one category column —
-    /// based on the placeholder PreviewColumns added for these modules.
-    /// Confirm the real column names/uniqueness before relying on this.
+    /// FUNaloMAX) now use the FIXED per-category upload panel (see
+    /// OnlineGamingUploaderViewModel / OnlineGamingPage) instead of a bulk
+    /// file — each category ("Solaire Online", "Table Games", etc.) is a
+    /// known, unique name for a given date, so the key is simply
+    /// Dte + category name column. This is what makes re-submitting the same
+    /// category on the same date REPLACE that one record instead of
+    /// inserting a duplicate.
     /// </summary>
     public static class UploadKeyConfig
     {
@@ -38,10 +42,10 @@ namespace NonGamingDirectUploader.Models
             { UploaderType.VIP,        new[] { "DTE", "VIP_Name", "Commission_Type", "Curr" } },
             { UploaderType.Junket,     new[] { "DTE", "VIP_Name", "Commission_Type", "Curr" } },
 
-            // ── Online Gaming — NOT YET CONFIRMED, see warning above. ────────
-            { UploaderType.VirtualGames, new[] { "Dte", "Brand", "Provider", "Wager", "Win" } },
-            { UploaderType.SportsBook,   new[] { "Dte", "Wager", "Win" } },
-            { UploaderType.FUNaloMAX,    new[] { "Dte", "GameType", "GameName", "Wager", "Win", "Payout" } },
+            // ── Online Gaming — fixed categories, keyed by Dte + category name.
+            { UploaderType.VirtualGames, new[] { "Dte", "Brand" } },
+            { UploaderType.SportsBook,   new[] { "Dte" } },
+            { UploaderType.FUNaloMAX,    new[] { "DTE", "GameName" } },
         };
 
         /// <summary>

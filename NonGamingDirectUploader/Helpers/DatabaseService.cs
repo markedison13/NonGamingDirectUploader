@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Data.OleDb;
+using System.IO;
 using System.Threading.Tasks;
 using NonGamingDirectUploader.Models;
 
@@ -16,6 +17,24 @@ namespace NonGamingDirectUploader.Helpers
         // ── CONNECTION ────────────────────────────────────────────────────────
         private static string BuildConnectionString(string dbPath)
             => $"Provider=Microsoft.ACE.OLEDB.12.0;Data Source={dbPath}";
+
+        /// <summary>
+        /// Checks the .accdb file actually exists on disk BEFORE ever handing
+        /// the path to the native ACE OLEDB driver. A missing or placeholder
+        /// path (e.g. one of the DatabaseConfig dummy paths that hasn't been
+        /// replaced yet) handed straight to OleDbConnection.Open() can throw
+        /// a native SEHException instead of a clean, catchable .NET error —
+        /// this stops that from ever happening by failing fast with a normal
+        /// FileNotFoundException first.
+        /// </summary>
+        private static void EnsureFileExists(string dbPath)
+        {
+            if (string.IsNullOrWhiteSpace(dbPath))
+                throw new FileNotFoundException("No database path configured.");
+            if (!File.Exists(dbPath))
+                throw new FileNotFoundException($"Database file not found: {dbPath}. " +
+                    "Check DatabaseConfig.cs (or AutomationConfig.cs) — this may still be a placeholder path.", dbPath);
+        }
 
         // ── TABLE NAME MAP ────────────────────────────────────────────────────
         private static string TableName(UploaderType type) => type switch
@@ -66,6 +85,7 @@ namespace NonGamingDirectUploader.Helpers
         {
             return await Task.Run(() =>
             {
+                EnsureFileExists(dbPath);
                 using var cn = new OleDbConnection(BuildConnectionString(dbPath));
                 cn.Open();
                 string sql = $"SELECT DTE FROM {TableName(type)} WHERE DTE = #{date:MM/dd/yyyy}#{SegmentFilterClause(type)}";
@@ -86,6 +106,7 @@ namespace NonGamingDirectUploader.Helpers
         {
             await Task.Run(() =>
             {
+                EnsureFileExists(dbPath);
                 using var cn = new OleDbConnection(BuildConnectionString(dbPath));
                 cn.Open();
                 string sql = $"DELETE * FROM {TableName(type)} WHERE DTE = #{date:MM/dd/yyyy}#{SegmentFilterClause(type)}";
@@ -99,6 +120,7 @@ namespace NonGamingDirectUploader.Helpers
         {
             await Task.Run(() =>
             {
+                EnsureFileExists(dbPath);
                 using var cn = new OleDbConnection(BuildConnectionString(dbPath));
                 cn.Open();
                 string sql = $"DELETE * FROM {TableName(type)} WHERE DTE Between #{start:MM/dd/yyyy}# And #{end:MM/dd/yyyy}#{SegmentFilterClause(type)}";
@@ -121,6 +143,7 @@ namespace NonGamingDirectUploader.Helpers
         {
             await Task.Run(() =>
             {
+                EnsureFileExists(dbPath);
                 using var cn = new OleDbConnection(BuildConnectionString(dbPath));
                 cn.Open();
 
@@ -164,6 +187,7 @@ namespace NonGamingDirectUploader.Helpers
             return await Task.Run(() =>
             {
                 int count = 0;
+                EnsureFileExists(dbPath);
                 using var cn = new OleDbConnection(BuildConnectionString(dbPath));
                 cn.Open();
 
@@ -202,6 +226,7 @@ namespace NonGamingDirectUploader.Helpers
         {
             await Task.Run(() =>
             {
+                EnsureFileExists(dbPath);
                 using var cn = new OleDbConnection(BuildConnectionString(dbPath));
                 cn.Open();
 
@@ -228,6 +253,7 @@ namespace NonGamingDirectUploader.Helpers
         {
             await Task.Run(() =>
             {
+                EnsureFileExists(dbPath);
                 using var cn = new OleDbConnection(BuildConnectionString(dbPath));
                 cn.Open();
 
@@ -269,6 +295,7 @@ namespace NonGamingDirectUploader.Helpers
         {
             return await Task.Run(() =>
             {
+                EnsureFileExists(dbPath);
                 using var cn = new OleDbConnection(BuildConnectionString(dbPath));
                 cn.Open();
                 string sql = $"SELECT * FROM {TableName(type)} WHERE DTE = #{date:MM/dd/yyyy}#{SegmentFilterClause(type)}";
@@ -284,6 +311,7 @@ namespace NonGamingDirectUploader.Helpers
         {
             return await Task.Run(() =>
             {
+                EnsureFileExists(dbPath);
                 using var cn = new OleDbConnection(BuildConnectionString(dbPath));
                 cn.Open();
                 string sql = $"SELECT * FROM {TableName(type)} WHERE DTE Between #{start:MM/dd/yyyy}# And #{end:MM/dd/yyyy}#{SegmentFilterClause(type)} ORDER BY DTE ASC";
@@ -301,6 +329,7 @@ namespace NonGamingDirectUploader.Helpers
             {
                 return await Task.Run(() =>
                 {
+                    EnsureFileExists(dbPath);
                     using var cn = new OleDbConnection(BuildConnectionString(dbPath));
                     cn.Open();
                     return cn.State == ConnectionState.Open;

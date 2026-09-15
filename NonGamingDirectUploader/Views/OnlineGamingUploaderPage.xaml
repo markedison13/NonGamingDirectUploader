@@ -1,0 +1,145 @@
+﻿<UserControl x:Class="NonGamingDirectUploader.Views.OnlineGamingUploaderPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:helpers="clr-namespace:NonGamingDirectUploader.Helpers">
+
+    <UserControl.Resources>
+        <helpers:BoolToVisibilityConverter x:Key="BoolToVis"/>
+
+        <!-- One category "box": label, Wager/Win inputs, an optional
+             read-only Payout (FUNaloMAX only), and its own Submit button.
+             The Button's Tag binds back to the CategoryEntryViewModel so
+             code-behind knows which row to submit. -->
+        <Style x:Key="CategoryBoxBorder" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource BgCardBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="14"/>
+            <Setter Property="Margin" Value="0,0,0,14"/>
+        </Style>
+
+        <Style x:Key="CategoryFieldLabel" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Background="{StaticResource BgSurfaceBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <!-- Page header -->
+            <RowDefinition Height="*"/>
+            <!-- Body -->
+        </Grid.RowDefinitions>
+
+        <!-- ── PAGE HEADER ─────────────────────────────────────────────────── -->
+        <Border Grid.Row="0" Padding="28,20,28,16"
+                BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                    <Border x:Name="AccentBar" Width="4" Height="22" CornerRadius="2"
+                            Background="{StaticResource AccentBlueBrush}" Margin="0,0,10,0"/>
+                    <TextBlock x:Name="TitleBlock" Text="Uploader" Foreground="{StaticResource TextPrimaryBrush}"
+                               FontSize="20" FontWeight="Bold"/>
+                </StackPanel>
+                <TextBlock x:Name="SubtitleBlock" Text="Enter Wager/Win per category."
+                           Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="14,0,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <!-- ── BODY ────────────────────────────────────────────────────────── -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="280"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Category boxes -->
+            <ScrollViewer Grid.Column="0" Style="{StaticResource AppScrollViewerStyle}">
+                <StackPanel Margin="24,20,24,20">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                        <TextBlock Text="Date:" Style="{StaticResource CategoryFieldLabel}" Margin="0,0,8,0"/>
+                        <DatePicker SelectedDate="{Binding UploadDate, Mode=TwoWay}" Width="150"/>
+                    </StackPanel>
+
+                    <ItemsControl ItemsSource="{Binding Categories}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource CategoryBoxBorder}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" FontSize="13"
+                                                       Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,8"/>
+                                            <Grid Margin="0,0,0,6">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="60"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="Wager" Style="{StaticResource CategoryFieldLabel}"/>
+                                                <TextBox Grid.Column="1" Text="{Binding WagerText, UpdateSourceTrigger=PropertyChanged}"/>
+                                            </Grid>
+                                            <Grid Margin="0,0,0,6">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="60"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="Win" Style="{StaticResource CategoryFieldLabel}"/>
+                                                <TextBox Grid.Column="1" Text="{Binding WinText, UpdateSourceTrigger=PropertyChanged}"/>
+                                            </Grid>
+                                            <!-- The "twist": Payout = Wager - Win, derived and read-only (FUNaloMAX only). -->
+                                            <Grid Visibility="{Binding ShowPayout, Converter={StaticResource BoolToVis}}">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="60"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="Payout" Style="{StaticResource CategoryFieldLabel}"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding PayoutDisplay}"
+                                                           Foreground="{StaticResource TextPrimaryBrush}" FontSize="12" VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </StackPanel>
+                                        <Button Grid.Column="1" Content="SUBMIT" Style="{StaticResource PrimaryButton}"
+                                                VerticalAlignment="Top" Width="90" Margin="14,0,0,0"
+                                                Tag="{Binding}" Click="SubmitCategory_Click"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Button Content="SUBMIT ALL" Style="{StaticResource SuccessButton}" HorizontalAlignment="Left"
+                            Width="160" Click="SubmitAll_Click"/>
+
+                    <TextBlock x:Name="FooterNoteText" Visibility="Collapsed"
+                               Text="Submitting any category here also recomputes the MegaFunalo daily totals."
+                               Foreground="{StaticResource TextMutedBrush}" FontSize="10" Margin="0,10,0,0" TextWrapping="Wrap"/>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Activity log -->
+            <Border Grid.Column="1" Margin="0,16,20,16"
+                    Background="{StaticResource BgCardBrush}" CornerRadius="8"
+                    BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" ClipToBounds="True">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Border Grid.Row="0" Padding="16,8" Background="{StaticResource BgElevatedBrush}"
+                            BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1">
+                        <TextBlock Text="Activity Log" Foreground="{StaticResource TextSecondaryBrush}"
+                                   FontSize="12" FontWeight="SemiBold"/>
+                    </Border>
+                    <ListBox x:Name="LogList" Grid.Row="1" Background="Transparent" BorderThickness="0"
+                             Foreground="{StaticResource TextSecondaryBrush}" FontSize="11"
+                             FontFamily="Consolas" Padding="12,6"/>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>
