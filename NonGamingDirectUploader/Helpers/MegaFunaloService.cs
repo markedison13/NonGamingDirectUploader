@@ -14,15 +14,34 @@ namespace NonGamingDirectUploader.Helpers
     /// manual upload step for it, and no user input beyond what's already
     /// typed into the FUNaloMAX category boxes.
     ///
+    /// CONFIRMED schema (Mega_Funalo table, per Access Designer view):
+    ///   Dte            Date/Time
+    ///   Trans Country  Short Text   (column name HAS a space — must be bracketed in SQL)
+    ///   Game Type      Long Text    (column name HAS a space — must be bracketed in SQL)
+    ///   Game Name      Long Text    (column name HAS a space — must be bracketed in SQL)
+    ///   Wager          Number
+    ///   Payout         Number
+    ///   Win            Number
+    ///
     /// ASSUMPTIONS (please confirm before relying on this in production):
     ///   - MegaFunalo lives in the SAME database as FUNaloMAX
-    ///     (OtherGaming_DB.accdb per DatabaseConfig) with columns
-    ///     Dte, TransCountry, GameType, GameName, Wager, Payout, Win.
+    ///     (OtherGaming_DB.accdb per DatabaseConfig).
     ///   - GameType ("Live Baccarat") and GameName ("Baccarat A") are FIXED
     ///     constant values, taken from the sample MegaFunalo row provided —
     ///     there is currently no other source that would tell this app what
     ///     they should be per-date.
     ///   - TransCountry has no known source yet and is left blank.
+    ///
+    /// FIX: the INSERT statement's column list uses "Trans Country" /
+    /// "Game Type" / "Game Name" — these names are correct (confirmed
+    /// against the real table), but Access/Jet SQL requires an identifier
+    /// containing a space to be wrapped in square brackets, or the engine
+    /// reads it as two separate tokens and throws
+    /// "OleDbException: Syntax error in INSERT INTO statement." (exactly
+    /// what was happening). Every column in the INSERT is now bracketed —
+    /// this is always safe in Access SQL whether or not a name has a space,
+    /// so it also protects against the same class of bug for Wager/Payout/
+    /// Win/Dte even though those happen to be single words today.
     /// </summary>
     public static class MegaFunaloService
     {
@@ -48,7 +67,7 @@ namespace NonGamingDirectUploader.Helpers
                 using (var del = new OleDbCommand($"DELETE * FROM {TableName} WHERE Dte = #{date:MM/dd/yyyy}#", cn))
                     del.ExecuteNonQuery();
 
-                var sql = $"INSERT INTO {TableName} (Dte, TransCountry, GameType, GameName, Wager, Payout, Win) " +
+                var sql = $"INSERT INTO {TableName} ([Dte], [Trans Country], [Game Type], [Game Name], [Wager], [Payout], [Win]) " +
                           "VALUES (?, ?, ?, ?, ?, ?, ?)";
                 using var cmd = new OleDbCommand(sql, cn);
                 cmd.Parameters.Add(new OleDbParameter("Dte", date.Date));

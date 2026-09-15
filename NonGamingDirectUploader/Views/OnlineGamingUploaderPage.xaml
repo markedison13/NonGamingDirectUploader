@@ -82,7 +82,8 @@
                                                     <ColumnDefinition Width="*"/>
                                                 </Grid.ColumnDefinitions>
                                                 <TextBlock Text="Wager" Style="{StaticResource CategoryFieldLabel}"/>
-                                                <TextBox Grid.Column="1" Text="{Binding WagerText, UpdateSourceTrigger=PropertyChanged}"/>
+                                                <TextBox Grid.Column="1" Text="{Binding WagerText, UpdateSourceTrigger=PropertyChanged}"
+                                                         helpers:NumericTextBoxBehavior.IsNumericOnly="True"/>
                                             </Grid>
                                             <Grid Margin="0,0,0,6">
                                                 <Grid.ColumnDefinitions>
@@ -90,7 +91,8 @@
                                                     <ColumnDefinition Width="*"/>
                                                 </Grid.ColumnDefinitions>
                                                 <TextBlock Text="Win" Style="{StaticResource CategoryFieldLabel}"/>
-                                                <TextBox Grid.Column="1" Text="{Binding WinText, UpdateSourceTrigger=PropertyChanged}"/>
+                                                <TextBox Grid.Column="1" Text="{Binding WinText, UpdateSourceTrigger=PropertyChanged}"
+                                                         helpers:NumericTextBoxBehavior.IsNumericOnly="True"/>
                                             </Grid>
                                             <!-- The "twist": Payout = Wager - Win, derived and read-only (FUNaloMAX only). -->
                                             <Grid Visibility="{Binding ShowPayout, Converter={StaticResource BoolToVis}}">
